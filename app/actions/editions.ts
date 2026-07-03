@@ -17,6 +17,7 @@ export async function createEdition(formData: FormData) {
     .from("organization_members")
     .select("organization_id")
     .eq("user_id", user!.id)
+    .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (!membership) redirect("/login");
