@@ -14,6 +14,9 @@ export interface Workspace {
 }
 
 export const getWorkspace = cache(async (): Promise<Workspace> => {
+  const { isDemo, demoWorkspace } = await import("@/lib/demo");
+  if (isDemo()) return demoWorkspace;
+
   const supabase = await createClient();
   const {
     data: { user },

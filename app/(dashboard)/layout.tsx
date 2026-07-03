@@ -2,15 +2,20 @@ import { getWorkspace } from "@/lib/data/workspace";
 import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/shell/Header";
 import { Sidebar } from "@/components/shell/Sidebar";
+import { isDemo } from "@/lib/demo";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const workspace = await getWorkspace();
-  const supabase = await createClient();
-  const { count: participantCount } = await supabase
-    .from("participants")
-    .select("id", { count: "exact", head: true })
-    .eq("edition_id", workspace.currentEdition.id)
-    .eq("waitlisted", false);
+  let participantCount = 0;
+  if (!isDemo()) {
+    const supabase = await createClient();
+    const { count } = await supabase
+      .from("participants")
+      .select("id", { count: "exact", head: true })
+      .eq("edition_id", workspace.currentEdition.id)
+      .eq("waitlisted", false);
+    participantCount = count ?? 0;
+  }
 
   return (
     <div className="flex min-h-screen flex-col">

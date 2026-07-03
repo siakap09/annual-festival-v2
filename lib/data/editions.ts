@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isDemo } from "@/lib/demo";
 import type { Edition } from "@/lib/types";
 
 export interface EditionStats {
@@ -9,6 +10,14 @@ export interface EditionStats {
 }
 
 export async function getEditionsWithStats(editions: Edition[]): Promise<EditionStats[]> {
+  if (isDemo()) {
+    return editions.map((edition) => ({
+      edition,
+      participantCount: 0,
+      tasksDone: 0,
+      tasksTotal: 0,
+    }));
+  }
   const supabase = await createClient();
 
   return Promise.all(

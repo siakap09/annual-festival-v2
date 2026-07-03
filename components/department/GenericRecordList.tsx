@@ -1,3 +1,5 @@
+"use client";
+
 import type { DepartmentRecord } from "@/lib/types";
 import { addRecord, deleteRecord, updateRecordStatus } from "@/app/actions/records";
 import { ActionForm } from "@/components/ui/ActionForm";

@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
+import { isDemo } from "@/lib/demo";
 import type { CheckinEvent, Participant } from "@/lib/types";
 
 export async function getParticipants(editionId: string): Promise<Participant[]> {
+  if (isDemo()) return [];
   const supabase = await createClient();
   const { data } = await supabase
     .from("participants")
@@ -12,6 +14,7 @@ export async function getParticipants(editionId: string): Promise<Participant[]>
 }
 
 export async function getCheckinEvents(editionId: string): Promise<CheckinEvent[]> {
+  if (isDemo()) return [];
   const supabase = await createClient();
   const { data: participants } = await supabase
     .from("participants")

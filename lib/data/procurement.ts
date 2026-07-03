@@ -1,7 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
+import { isDemo } from "@/lib/demo";
 import type { BudgetItem } from "@/lib/types";
 
+export { summarizeBudget } from "@/lib/budget";
+
 export async function getBudgetItems(departmentId: string): Promise<BudgetItem[]> {
+  if (isDemo()) return [];
   const supabase = await createClient();
   const { data } = await supabase
     .from("budget_items")
@@ -9,31 +13,4 @@ export async function getBudgetItems(departmentId: string): Promise<BudgetItem[]
     .eq("department_id", departmentId)
     .order("created_at", { ascending: false });
   return (data ?? []) as BudgetItem[];
-}
-
-export function summarizeBudget(items: BudgetItem[]) {
-  const revenue = items.filter((i) => i.type === "revenue");
-  const expenses = items.filter((i) => i.type === "expense");
-
-  const totalBudgetedRevenue = revenue.reduce((sum, i) => sum + Number(i.amount), 0);
-  const totalBudgetedExpenses = expenses.reduce((sum, i) => sum + Number(i.amount), 0);
-  const revenueCollectedPaid = revenue
-    .filter((i) => i.status === "paid")
-    .reduce((sum, i) => sum + Number(i.amount), 0);
-  const expensesPaid = expenses
-    .filter((i) => i.status === "paid")
-    .reduce((sum, i) => sum + Number(i.amount), 0);
-  const netPaidPL = revenueCollectedPaid - expensesPaid;
-
-  return {
-    revenue,
-    expenses,
-    totalBudget: totalBudgetedRevenue + totalBudgetedExpenses,
-    totalBudgetedRevenue,
-    totalBudgetedExpenses,
-    revenueCollectedPaid,
-    totalExpensesAll: totalBudgetedExpenses,
-    expensesPaid,
-    netPaidPL,
-  };
 }

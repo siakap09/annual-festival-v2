@@ -9,6 +9,7 @@ import { Tabs } from "@/components/ui/Tabs";
 import { ManpowerPanel } from "@/components/department/ManpowerPanel";
 import { GenericRecordList } from "@/components/department/GenericRecordList";
 import { CueSheet } from "@/components/department/CueSheet";
+import { isDemo } from "@/lib/demo";
 
 export const dynamic = "force-dynamic";
 
@@ -31,12 +32,16 @@ export default async function ShowcasePage({
     getManpower(dept.id),
   ]);
 
-  const supabase = await createClient();
-  const { count: participantCount } = await supabase
-    .from("participants")
-    .select("id", { count: "exact", head: true })
-    .eq("edition_id", currentEdition.id)
-    .eq("waitlisted", false);
+  let participantCount = 0;
+  if (!isDemo()) {
+    const supabase = await createClient();
+    const { count } = await supabase
+      .from("participants")
+      .select("id", { count: "exact", head: true })
+      .eq("edition_id", currentEdition.id)
+      .eq("waitlisted", false);
+    participantCount = count ?? 0;
+  }
 
   const categoriesCount = new Set(scoring.map((s) => s.subtitle).filter(Boolean)).size;
   const judgesCount = manpower.filter((m) => m.role?.toLowerCase().includes("judge")).length;

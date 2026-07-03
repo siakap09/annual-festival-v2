@@ -11,8 +11,8 @@ import { UnitProgress } from "@/components/department/UnitProgress";
 import { AnnouncementsPanel } from "@/components/department/AnnouncementsPanel";
 import { departmentByKey } from "@/lib/constants";
 import { formatMYR, percent, daysUntilLabel, formatDate } from "@/lib/utils";
-import { updateWaitlistSetting } from "@/app/actions/editions";
-import { ActionForm } from "@/components/ui/ActionForm";
+import { WaitlistToggle } from "@/components/editions/WaitlistToggle";
+import { isDemo } from "@/lib/demo";
 
 export const dynamic = "force-dynamic";
 
@@ -33,24 +33,30 @@ export default async function OCPage({
     getAnnouncements(currentEdition.id),
   ]);
 
-  const supabase = await createClient();
   const departmentIds = departments.map((d) => d.id);
 
-  const [{ count: participantCount }, { data: revenueItems }] = await Promise.all([
-    supabase
-      .from("participants")
-      .select("id", { count: "exact", head: true })
-      .eq("edition_id", currentEdition.id)
-      .eq("waitlisted", false),
-    departmentIds.length
-      ? supabase
-          .from("budget_items")
-          .select("amount")
-          .in("department_id", departmentIds)
-          .eq("type", "revenue")
-          .eq("status", "paid")
-      : Promise.resolve({ data: [] as { amount: number }[] }),
-  ]);
+  let participantCount = 0;
+  let revenueItems: { amount: number }[] = [];
+  if (!isDemo()) {
+    const supabase = await createClient();
+    const [{ count }, { data }] = await Promise.all([
+      supabase
+        .from("participants")
+        .select("id", { count: "exact", head: true })
+        .eq("edition_id", currentEdition.id)
+        .eq("waitlisted", false),
+      departmentIds.length
+        ? supabase
+            .from("budget_items")
+            .select("amount")
+            .in("department_id", departmentIds)
+            .eq("type", "revenue")
+            .eq("status", "paid")
+        : Promise.resolve({ data: [] as { amount: number }[] }),
+    ]);
+    participantCount = count ?? 0;
+    revenueItems = (data ?? []) as { amount: number }[];
+  }
 
   const allTasks = Object.values(tasksByDepartment).flat();
   const tasksDone = allTasks.filter((t) => t.status === "done").length;
@@ -98,19 +104,7 @@ export default async function OCPage({
 
       <div className="mb-5 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         <h3 className="mb-2 text-sm font-semibold text-gray-800">Registration Settings</h3>
-        <ActionForm action={updateWaitlistSetting}>
-          <input type="hidden" name="edition_id" value={currentEdition.id} />
-          <label className="flex items-center gap-2 text-sm text-gray-700">
-            <input
-              type="checkbox"
-              name="enable_waitlist"
-              defaultChecked={currentEdition.enable_waitlist}
-              onChange={(e) => e.currentTarget.form?.requestSubmit()}
-              className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-            />
-            Enable waitlist when target is reached
-          </label>
-        </ActionForm>
+        <WaitlistToggle editionId={currentEdition.id} enabled={currentEdition.enable_waitlist} />
       </div>
 
       <div className="mb-5 rounded-lg border border-gray-200 bg-white shadow-sm">

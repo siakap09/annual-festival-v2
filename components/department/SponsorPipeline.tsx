@@ -1,3 +1,5 @@
+"use client";
+
 import { SPONSOR_STAGES } from "@/lib/constants";
 import type { Sponsor } from "@/lib/types";
 import { addSponsor, deleteSponsor, updateSponsorStage } from "@/app/actions/sponsorship";

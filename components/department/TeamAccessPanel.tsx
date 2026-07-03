@@ -1,3 +1,5 @@
+"use client";
+
 import type { TeamAccess } from "@/lib/types";
 import { addTeamAccess, removeTeamAccess } from "@/app/actions/departments";
 import { ActionForm } from "@/components/ui/ActionForm";

@@ -15,6 +15,7 @@ import { GenericRecordList } from "@/components/department/GenericRecordList";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { departmentByKey } from "@/lib/constants";
 import { formatDate, formatMYR, daysUntil, percent } from "@/lib/utils";
+import { isDemo } from "@/lib/demo";
 
 export const dynamic = "force-dynamic";
 
@@ -38,19 +39,25 @@ export default async function CeoPage({
       getRecords(dept.id, "post_mortem"),
     ]);
 
-  const supabase = await createClient();
   const departmentIds = departments.map((d) => d.id);
 
-  const [{ count: participantCount }, { data: budgetItems }] = await Promise.all([
-    supabase
-      .from("participants")
-      .select("id", { count: "exact", head: true })
-      .eq("edition_id", currentEdition.id)
-      .eq("waitlisted", false),
-    departmentIds.length
-      ? supabase.from("budget_items").select("type, amount, status").in("department_id", departmentIds)
-      : Promise.resolve({ data: [] as { type: string; amount: number; status: string }[] }),
-  ]);
+  let participantCount = 0;
+  let budgetItems: { type: string; amount: number; status: string }[] = [];
+  if (!isDemo()) {
+    const supabase = await createClient();
+    const [{ count }, { data }] = await Promise.all([
+      supabase
+        .from("participants")
+        .select("id", { count: "exact", head: true })
+        .eq("edition_id", currentEdition.id)
+        .eq("waitlisted", false),
+      departmentIds.length
+        ? supabase.from("budget_items").select("type, amount, status").in("department_id", departmentIds)
+        : Promise.resolve({ data: [] as { type: string; amount: number; status: string }[] }),
+    ]);
+    participantCount = count ?? 0;
+    budgetItems = (data ?? []) as { type: string; amount: number; status: string }[];
+  }
 
   const revenuePaid = (budgetItems ?? [])
     .filter((b) => b.type === "revenue" && b.status === "paid")

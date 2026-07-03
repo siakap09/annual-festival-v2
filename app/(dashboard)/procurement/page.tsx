@@ -1,5 +1,6 @@
 import { getWorkspace, findDepartment } from "@/lib/data/workspace";
-import { getBudgetItems, summarizeBudget } from "@/lib/data/procurement";
+import { getBudgetItems } from "@/lib/data/procurement";
+import { summarizeBudget } from "@/lib/budget";
 import { getManpower } from "@/lib/data/departments";
 import { getRecords } from "@/lib/data/records";
 import { BackToEditions } from "@/components/shell/PageHeader";

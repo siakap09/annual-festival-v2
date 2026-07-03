@@ -1,3 +1,5 @@
+"use client";
+
 import type { Announcement } from "@/lib/types";
 import { addAnnouncement } from "@/app/actions/departments";
 import { ActionForm } from "@/components/ui/ActionForm";

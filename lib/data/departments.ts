@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isDemo } from "@/lib/demo";
 import type {
   Announcement,
   Department,
@@ -8,6 +9,7 @@ import type {
 } from "@/lib/types";
 
 export async function getTasks(departmentId: string): Promise<Task[]> {
+  if (isDemo()) return [];
   const supabase = await createClient();
   const { data } = await supabase
     .from("tasks")
@@ -21,6 +23,7 @@ export async function getTasks(departmentId: string): Promise<Task[]> {
 export async function getAllTasksForEdition(
   departments: Department[]
 ): Promise<Record<string, Task[]>> {
+  if (isDemo()) return {};
   const supabase = await createClient();
   const departmentIds = departments.map((d) => d.id);
   if (departmentIds.length === 0) return {};
@@ -39,6 +42,7 @@ export async function getAllTasksForEdition(
 }
 
 export async function getManpower(departmentId: string): Promise<Manpower[]> {
+  if (isDemo()) return [];
   const supabase = await createClient();
   const { data } = await supabase
     .from("manpower")
@@ -51,6 +55,7 @@ export async function getManpower(departmentId: string): Promise<Manpower[]> {
 export async function getManpowerCountsForEdition(
   departments: Department[]
 ): Promise<{ internal: number; external: number }> {
+  if (isDemo()) return { internal: 0, external: 0 };
   const supabase = await createClient();
   const departmentIds = departments.map((d) => d.id);
   if (departmentIds.length === 0) return { internal: 0, external: 0 };
@@ -66,6 +71,7 @@ export async function getManpowerCountsForEdition(
 }
 
 export async function getTeamAccess(departmentId: string): Promise<TeamAccess[]> {
+  if (isDemo()) return [];
   const supabase = await createClient();
   const { data } = await supabase
     .from("team_access")
@@ -76,6 +82,7 @@ export async function getTeamAccess(departmentId: string): Promise<TeamAccess[]>
 }
 
 export async function getAnnouncements(editionId: string): Promise<Announcement[]> {
+  if (isDemo()) return [];
   const supabase = await createClient();
   const { data } = await supabase
     .from("announcements")

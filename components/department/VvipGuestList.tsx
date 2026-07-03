@@ -1,3 +1,5 @@
+"use client";
+
 import type { VvipGuest } from "@/lib/types";
 import { addVvipGuest } from "@/app/actions/sponsorship";
 import { ActionForm } from "@/components/ui/ActionForm";

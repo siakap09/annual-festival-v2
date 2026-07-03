@@ -1,5 +1,7 @@
+"use client";
+
 import type { BudgetItem } from "@/lib/types";
-import { summarizeBudget } from "@/lib/data/procurement";
+import { summarizeBudget } from "@/lib/budget";
 import { addBudgetItem, deleteBudgetItem, updateBudgetItemStatus } from "@/app/actions/procurement";
 import { ActionForm } from "@/components/ui/ActionForm";
 import { InlineToggle } from "@/components/ui/InlineToggle";

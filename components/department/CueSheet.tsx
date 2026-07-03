@@ -1,3 +1,5 @@
+"use client";
+
 import type { CueBlock } from "@/lib/types";
 import { addCueBlock, deleteCueBlock } from "@/app/actions/showcase";
 import { ActionForm } from "@/components/ui/ActionForm";

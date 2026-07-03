@@ -1,3 +1,5 @@
+"use client";
+
 import type { Manpower } from "@/lib/types";
 import { addManpower, removeManpower } from "@/app/actions/departments";
 import { ActionForm } from "@/components/ui/ActionForm";

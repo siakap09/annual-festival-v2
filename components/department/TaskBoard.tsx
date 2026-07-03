@@ -1,3 +1,5 @@
+"use client";
+
 import { TASK_STATUSES } from "@/lib/constants";
 import type { Task } from "@/lib/types";
 import { addTask, deleteTask, updateTaskStatus } from "@/app/actions/departments";

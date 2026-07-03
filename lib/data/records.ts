@@ -1,10 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
+import { isDemo } from "@/lib/demo";
 import type { DepartmentRecord } from "@/lib/types";
 
 export async function getRecords(
   departmentId: string,
   kind: string
 ): Promise<DepartmentRecord[]> {
+  if (isDemo()) return [];
   const supabase = await createClient();
   const { data } = await supabase
     .from("department_records")

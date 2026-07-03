@@ -1,3 +1,5 @@
+"use client";
+
 import type { SponsorPackage } from "@/lib/types";
 import { addSponsorPackage } from "@/app/actions/sponsorship";
 import { ActionForm } from "@/components/ui/ActionForm";
