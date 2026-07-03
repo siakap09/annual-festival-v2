@@ -1,0 +1,30 @@
+import { getWorkspace } from "@/lib/data/workspace";
+import { createClient } from "@/lib/supabase/server";
+import { Header } from "@/components/shell/Header";
+import { Sidebar } from "@/components/shell/Sidebar";
+
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const workspace = await getWorkspace();
+  const supabase = await createClient();
+  const { count: participantCount } = await supabase
+    .from("participants")
+    .select("id", { count: "exact", head: true })
+    .eq("edition_id", workspace.currentEdition.id)
+    .eq("waitlisted", false);
+
+  return (
+    <div className="flex min-h-screen flex-col">
+      <Header
+        orgName={workspace.organization.name}
+        currentEdition={workspace.currentEdition}
+        editions={workspace.editions}
+        participantCount={participantCount ?? 0}
+        userEmail={workspace.userEmail}
+      />
+      <div className="flex flex-1">
+        <Sidebar />
+        <main className="flex-1 overflow-x-hidden bg-gray-50 p-6">{children}</main>
+      </div>
+    </div>
+  );
+}
