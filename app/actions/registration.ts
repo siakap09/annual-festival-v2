@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { assertNotDemo } from "@/lib/demo";
 
 export async function registerParticipant(formData: FormData) {
+  assertNotDemo();
   const editionId = String(formData.get("edition_id"));
   const studentName = String(formData.get("student_name") ?? "").trim();
   const parentName = String(formData.get("parent_name") ?? "").trim();
@@ -42,6 +44,7 @@ export async function registerParticipant(formData: FormData) {
 }
 
 export async function confirmParticipant(formData: FormData) {
+  assertNotDemo();
   const id = String(formData.get("id"));
   const path = String(formData.get("path") ?? "/registration");
 
@@ -51,6 +54,7 @@ export async function confirmParticipant(formData: FormData) {
 }
 
 export async function markEmailSent(formData: FormData) {
+  assertNotDemo();
   const id = String(formData.get("id"));
   const path = String(formData.get("path") ?? "/registration");
 
@@ -60,6 +64,7 @@ export async function markEmailSent(formData: FormData) {
 }
 
 export async function checkInParticipant(formData: FormData) {
+  assertNotDemo();
   const participantId = String(formData.get("participant_id"));
   const checkpoint = Number(formData.get("checkpoint"));
   const path = String(formData.get("path") ?? "/registration-area");

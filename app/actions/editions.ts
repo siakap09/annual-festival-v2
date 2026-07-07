@@ -5,8 +5,10 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { CURRENT_EDITION_COOKIE, DEPARTMENTS } from "@/lib/constants";
+import { assertNotDemo } from "@/lib/demo";
 
 export async function createEdition(formData: FormData) {
+  assertNotDemo();
   const supabase = await createClient();
   const {
     data: { user },
@@ -58,6 +60,7 @@ export async function createEdition(formData: FormData) {
 }
 
 export async function updateEditionStatus(formData: FormData) {
+  assertNotDemo();
   const editionId = String(formData.get("edition_id"));
   const status = String(formData.get("status"));
   const supabase = await createClient();
@@ -67,6 +70,7 @@ export async function updateEditionStatus(formData: FormData) {
 }
 
 export async function archiveEdition(formData: FormData) {
+  assertNotDemo();
   const editionId = String(formData.get("edition_id"));
   const supabase = await createClient();
 
@@ -75,6 +79,7 @@ export async function archiveEdition(formData: FormData) {
 }
 
 export async function copyEdition(formData: FormData) {
+  assertNotDemo();
   const editionId = String(formData.get("edition_id"));
   const supabase = await createClient();
 
@@ -136,6 +141,7 @@ export async function setCurrentEditionAndGo(formData: FormData) {
 }
 
 export async function updateWaitlistSetting(formData: FormData) {
+  assertNotDemo();
   const editionId = String(formData.get("edition_id"));
   const enabled = formData.get("enable_waitlist") === "on";
   const supabase = await createClient();
@@ -145,6 +151,7 @@ export async function updateWaitlistSetting(formData: FormData) {
 }
 
 export async function updateDepartmentLead(formData: FormData) {
+  assertNotDemo();
   const departmentId = String(formData.get("department_id"));
   const leadName = String(formData.get("lead_name") ?? "").trim();
   const supabase = await createClient();

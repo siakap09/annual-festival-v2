@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { assertNotDemo } from "@/lib/demo";
 
 export async function addCueBlock(formData: FormData) {
+  assertNotDemo();
   const departmentId = String(formData.get("department_id"));
   const day = Number(formData.get("day") ?? 1) || 1;
   const title = String(formData.get("title") ?? "").trim();
@@ -26,6 +28,7 @@ export async function addCueBlock(formData: FormData) {
 }
 
 export async function deleteCueBlock(formData: FormData) {
+  assertNotDemo();
   const id = String(formData.get("id"));
   const path = String(formData.get("path") ?? "/showcase");
 

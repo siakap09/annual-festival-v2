@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { assertNotDemo } from "@/lib/demo";
 
 export async function addSponsor(formData: FormData) {
+  assertNotDemo();
   const departmentId = String(formData.get("department_id"));
   const editionId = String(formData.get("edition_id"));
   const name = String(formData.get("name") ?? "").trim();
@@ -29,6 +31,7 @@ export async function addSponsor(formData: FormData) {
 }
 
 export async function updateSponsorStage(formData: FormData) {
+  assertNotDemo();
   const id = String(formData.get("id"));
   const stage = String(formData.get("stage"));
   const path = String(formData.get("path") ?? "/sponsorship");
@@ -39,6 +42,7 @@ export async function updateSponsorStage(formData: FormData) {
 }
 
 export async function deleteSponsor(formData: FormData) {
+  assertNotDemo();
   const id = String(formData.get("id"));
   const path = String(formData.get("path") ?? "/sponsorship");
 
@@ -48,6 +52,7 @@ export async function deleteSponsor(formData: FormData) {
 }
 
 export async function addVvipGuest(formData: FormData) {
+  assertNotDemo();
   const departmentId = String(formData.get("department_id"));
   const editionId = String(formData.get("edition_id"));
   const name = String(formData.get("name") ?? "").trim();
@@ -68,6 +73,7 @@ export async function addVvipGuest(formData: FormData) {
 }
 
 export async function addSponsorPackage(formData: FormData) {
+  assertNotDemo();
   const departmentId = String(formData.get("department_id"));
   const editionId = String(formData.get("edition_id"));
   const name = String(formData.get("name") ?? "").trim();

@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { assertNotDemo } from "@/lib/demo";
 
 export async function addTask(formData: FormData) {
+  assertNotDemo();
   const departmentId = String(formData.get("department_id"));
   const title = String(formData.get("title") ?? "").trim();
   const status = String(formData.get("status") ?? "todo");
@@ -16,6 +18,7 @@ export async function addTask(formData: FormData) {
 }
 
 export async function updateTaskStatus(formData: FormData) {
+  assertNotDemo();
   const taskId = String(formData.get("task_id"));
   const status = String(formData.get("status"));
   const path = String(formData.get("path") ?? "/oc");
@@ -26,6 +29,7 @@ export async function updateTaskStatus(formData: FormData) {
 }
 
 export async function deleteTask(formData: FormData) {
+  assertNotDemo();
   const taskId = String(formData.get("task_id"));
   const path = String(formData.get("path") ?? "/oc");
 
@@ -35,6 +39,7 @@ export async function deleteTask(formData: FormData) {
 }
 
 export async function addManpower(formData: FormData) {
+  assertNotDemo();
   const departmentId = String(formData.get("department_id"));
   const type = String(formData.get("type") ?? "internal");
   const name = String(formData.get("name") ?? "").trim();
@@ -55,6 +60,7 @@ export async function addManpower(formData: FormData) {
 }
 
 export async function removeManpower(formData: FormData) {
+  assertNotDemo();
   const id = String(formData.get("id"));
   const path = String(formData.get("path") ?? "/oc");
 
@@ -64,6 +70,7 @@ export async function removeManpower(formData: FormData) {
 }
 
 export async function addTeamAccess(formData: FormData) {
+  assertNotDemo();
   const departmentId = String(formData.get("department_id"));
   const email = String(formData.get("email") ?? "").trim();
   const accessLevel = String(formData.get("access_level") ?? "viewer");
@@ -80,6 +87,7 @@ export async function addTeamAccess(formData: FormData) {
 }
 
 export async function removeTeamAccess(formData: FormData) {
+  assertNotDemo();
   const id = String(formData.get("id"));
   const path = String(formData.get("path") ?? "/oc");
 
@@ -89,6 +97,7 @@ export async function removeTeamAccess(formData: FormData) {
 }
 
 export async function addAnnouncement(formData: FormData) {
+  assertNotDemo();
   const editionId = String(formData.get("edition_id"));
   const departmentId = formData.get("department_id")
     ? String(formData.get("department_id"))

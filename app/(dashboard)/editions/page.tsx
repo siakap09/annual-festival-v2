@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/shell/PageHeader";
 import { Badge } from "@/components/ui/Badge";
 import { NewEditionButton } from "@/components/editions/NewEditionButton";
 import { EditionStatusSelect } from "@/components/editions/EditionStatusSelect";
+import { ActionForm } from "@/components/ui/ActionForm";
 import { formatDateRange } from "@/lib/utils";
 import { archiveEdition, copyEdition, setCurrentEditionAndGo } from "@/app/actions/editions";
 
@@ -66,18 +67,18 @@ export default async function EditionsPage() {
                         View
                       </button>
                     </form>
-                    <form action={copyEdition}>
+                    <ActionForm action={copyEdition}>
                       <input type="hidden" name="edition_id" value={edition.id} />
                       <button type="submit" className="text-purple-600 hover:underline">
                         Copy
                       </button>
-                    </form>
-                    <form action={archiveEdition}>
+                    </ActionForm>
+                    <ActionForm action={archiveEdition}>
                       <input type="hidden" name="edition_id" value={edition.id} />
                       <button type="submit" className="text-red-500 hover:underline">
                         Archive
                       </button>
-                    </form>
+                    </ActionForm>
                   </div>
                 </td>
               </tr>

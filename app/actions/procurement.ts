@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { assertNotDemo } from "@/lib/demo";
 
 export async function addBudgetItem(formData: FormData) {
+  assertNotDemo();
   const departmentId = String(formData.get("department_id"));
   const editionId = String(formData.get("edition_id"));
   const type = String(formData.get("type"));
@@ -28,6 +30,7 @@ export async function addBudgetItem(formData: FormData) {
 }
 
 export async function updateBudgetItemStatus(formData: FormData) {
+  assertNotDemo();
   const id = String(formData.get("id"));
   const status = String(formData.get("status"));
   const path = String(formData.get("path") ?? "/procurement");
@@ -38,6 +41,7 @@ export async function updateBudgetItemStatus(formData: FormData) {
 }
 
 export async function deleteBudgetItem(formData: FormData) {
+  assertNotDemo();
   const id = String(formData.get("id"));
   const path = String(formData.get("path") ?? "/procurement");
 

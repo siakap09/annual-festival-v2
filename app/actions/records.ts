@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { assertNotDemo } from "@/lib/demo";
 
 export async function addRecord(formData: FormData) {
+  assertNotDemo();
   const departmentId = String(formData.get("department_id"));
   const kind = String(formData.get("kind"));
   const title = String(formData.get("title") ?? "").trim();
@@ -31,6 +33,7 @@ export async function addRecord(formData: FormData) {
 }
 
 export async function updateRecordStatus(formData: FormData) {
+  assertNotDemo();
   const id = String(formData.get("id"));
   const status = String(formData.get("status"));
   const path = String(formData.get("path") ?? "/");
@@ -41,6 +44,7 @@ export async function updateRecordStatus(formData: FormData) {
 }
 
 export async function deleteRecord(formData: FormData) {
+  assertNotDemo();
   const id = String(formData.get("id"));
   const path = String(formData.get("path") ?? "/");
 

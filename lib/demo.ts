@@ -6,6 +6,12 @@ export function isDemo(): boolean {
   return process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 }
 
+export function assertNotDemo(): void {
+  if (isDemo()) {
+    throw new Error("This is a read-only demo preview — changes aren't saved.");
+  }
+}
+
 const DEMO_EDITION_ID = "demo-edition-0001";
 const DEMO_ORG_ID = "demo-org-0001";
 

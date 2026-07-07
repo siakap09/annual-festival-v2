@@ -2,8 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { assertNotDemo, isDemo } from "@/lib/demo";
 
 export async function login(formData: FormData) {
+  assertNotDemo();
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
   const supabase = await createClient();
@@ -16,6 +18,7 @@ export async function login(formData: FormData) {
 }
 
 export async function signup(formData: FormData) {
+  assertNotDemo();
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
   const supabase = await createClient();
@@ -28,6 +31,9 @@ export async function signup(formData: FormData) {
 }
 
 export async function logout() {
+  if (isDemo()) {
+    redirect("/editions");
+  }
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
