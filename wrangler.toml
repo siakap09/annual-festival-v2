@@ -1,0 +1,11 @@
+name = "annual-festival-v2"
+pages_build_output_dir = ".vercel/output/static"
+compatibility_date = "2026-07-07"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+NEXT_PUBLIC_SUPABASE_URL = "https://dbxxnuzttggotnrcmxbx.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRieHhudXp0dGdnb3RucmNteGJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0OTUzNTgsImV4cCI6MjA5OTA3MTM1OH0.JldaLYdollKGuEFeZl6eBAjILctNXWvkZghzAP0gyx8"
+NEXT_PUBLIC_DEMO_MODE = "false"
+
+[env.production]
