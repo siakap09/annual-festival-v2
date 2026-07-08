@@ -1,18 +1,37 @@
 import { getWorkspace } from "@/lib/data/workspace";
 import { getEditionsWithStats } from "@/lib/data/editions";
+import { getSectionAccessForEdition } from "@/lib/data/sectionAccess";
+import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { Badge } from "@/components/ui/Badge";
 import { NewEditionButton } from "@/components/editions/NewEditionButton";
 import { EditionStatusSelect } from "@/components/editions/EditionStatusSelect";
+import { SectionAccessButton } from "@/components/editions/SectionAccessButton";
 import { ActionForm } from "@/components/ui/ActionForm";
 import { formatDateRange } from "@/lib/utils";
 import { archiveEdition, copyEdition, setCurrentEditionAndGo } from "@/app/actions/editions";
+import { isDemo } from "@/lib/demo";
+import type { Department } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function EditionsPage() {
   const workspace = await getWorkspace();
   const stats = await getEditionsWithStats(workspace.editions);
+
+  const accessByEdition = new Map<string, { departments: Department[]; access: Awaited<ReturnType<typeof getSectionAccessForEdition>> }>();
+  if (!isDemo()) {
+    const supabase = await createClient();
+    await Promise.all(
+      workspace.editions.map(async (edition) => {
+        const [{ data: departments }, access] = await Promise.all([
+          supabase.from("departments").select("*").eq("edition_id", edition.id),
+          getSectionAccessForEdition(edition.id),
+        ]);
+        accessByEdition.set(edition.id, { departments: (departments ?? []) as Department[], access });
+      })
+    );
+  }
 
   return (
     <div>
@@ -79,6 +98,13 @@ export default async function EditionsPage() {
                         Archive
                       </button>
                     </ActionForm>
+                    {!isDemo() && (
+                      <SectionAccessButton
+                        departments={accessByEdition.get(edition.id)?.departments ?? []}
+                        access={accessByEdition.get(edition.id)?.access ?? []}
+                        path="/editions"
+                      />
+                    )}
                   </div>
                 </td>
               </tr>

@@ -70,6 +70,18 @@ export interface TeamAccess {
   created_at: string;
 }
 
+export type SectionAccessLevel = "viewer" | "editor";
+
+export interface SectionAccess {
+  id: string;
+  edition_id: string;
+  department_id: string;
+  email: string;
+  user_id: string | null;
+  access_level: SectionAccessLevel;
+  created_at: string;
+}
+
 export interface Announcement {
   id: string;
   edition_id: string;
