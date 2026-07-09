@@ -24,11 +24,15 @@ export function Sidebar({
   const departments = allowedKeys
     ? DEPARTMENTS.filter((d) => allowedKeys.includes(d.key))
     : DEPARTMENTS;
-  // Departments only make sense once you've clicked into a specific edition --
-  // on the Edition Management list itself, there's no single edition in view.
-  // Restricted/scoped users never see Edition Management at all, so this only
-  // applies to full org members.
-  const hideDepartments = showEditionManagement && pathname === "/editions";
+  // Departments only make sense once you're inside an actual department/edition
+  // route -- org-level pages (Edition Management, Role Management, and any
+  // future ones) have no single edition/department in view. Positive check
+  // against known department routes instead of an exclusion list, so adding
+  // another org-level page later doesn't require remembering to update this.
+  const isDepartmentRoute = DEPARTMENTS.some(
+    (d) => pathname === d.path || pathname.startsWith(`${d.path}/`)
+  );
+  const hideDepartments = !isDepartmentRoute;
 
   useEffect(() => {
     close();
