@@ -2,7 +2,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentEditionIdCookie } from "@/lib/edition-context";
-import type { Department, Edition, Organization } from "@/lib/types";
+import type { Department, Edition, Organization, OrgRole } from "@/lib/types";
 import type { DepartmentKey } from "@/lib/constants";
 
 export interface Workspace {
@@ -13,6 +13,8 @@ export interface Workspace {
   departments: Department[];
   /** "restricted" = user only holds section_access grants, not an organization_members row. */
   scope: "full" | "restricted";
+  /** The viewer's org-level role. null for restricted (scoped) users, who have no organization_members row. */
+  role: OrgRole | null;
 }
 
 type ScopedAccessRow = { edition_id: string; department_id: string; access_level: string };
@@ -64,6 +66,7 @@ async function buildScopedWorkspace(
     currentEdition,
     departments: (departments ?? []) as Department[],
     scope: "restricted",
+    role: null,
   };
 }
 
@@ -80,7 +83,7 @@ export const getWorkspace = cache(async (): Promise<Workspace> => {
 
   const { data: membership } = await supabase
     .from("organization_members")
-    .select("organization_id")
+    .select("organization_id, role")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -144,6 +147,7 @@ export const getWorkspace = cache(async (): Promise<Workspace> => {
     currentEdition,
     departments: (departments ?? []) as Department[],
     scope: "full",
+    role: (membership.role as OrgRole) ?? null,
   };
 });
 

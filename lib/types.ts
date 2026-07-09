@@ -9,6 +9,20 @@ export interface Organization {
   created_at: string;
 }
 
+export type OrgRole = "owner" | "admin" | "member";
+
+export interface OrganizationMember {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  role: OrgRole;
+  created_at: string;
+}
+
+export interface OrganizationMemberWithEmail extends OrganizationMember {
+  email: string;
+}
+
 export interface Edition {
   id: string;
   organization_id: string;

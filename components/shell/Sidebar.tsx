@@ -11,17 +11,24 @@ export function Sidebar({
   allowedKeys,
   homeHref = "/editions",
   showEditionManagement = true,
+  showRoleManagement = false,
 }: {
   /** Restrict visible department links (scoped/section-access users). Omit to show all. */
   allowedKeys?: DepartmentKey[];
   homeHref?: string;
   showEditionManagement?: boolean;
+  showRoleManagement?: boolean;
 }) {
   const pathname = usePathname();
   const { open, close } = useSidebar();
   const departments = allowedKeys
     ? DEPARTMENTS.filter((d) => allowedKeys.includes(d.key))
     : DEPARTMENTS;
+  // Departments only make sense once you've clicked into a specific edition --
+  // on the Edition Management list itself, there's no single edition in view.
+  // Restricted/scoped users never see Edition Management at all, so this only
+  // applies to full org members.
+  const hideDepartments = showEditionManagement && pathname === "/editions";
 
   useEffect(() => {
     close();
@@ -57,20 +64,40 @@ export function Sidebar({
             </>
           )}
 
-          <div className="px-4 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-            Departments
-          </div>
-          <nav className="mt-1 flex flex-col">
-            {departments.map((dept) => (
-              <SidebarLink
-                key={dept.key}
-                href={dept.path}
-                active={pathname.startsWith(dept.path)}
-                icon={dept.icon}
-                label={dept.name}
-              />
-            ))}
-          </nav>
+          {showRoleManagement && (
+            <>
+              <div className="px-4 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                Organization
+              </div>
+              <nav className="mt-1 mb-4 flex flex-col">
+                <SidebarLink
+                  href="/role-management"
+                  active={pathname === "/role-management"}
+                  icon="🛡️"
+                  label="Role Management"
+                />
+              </nav>
+            </>
+          )}
+
+          {!hideDepartments && (
+            <>
+              <div className="px-4 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                Departments
+              </div>
+              <nav className="mt-1 flex flex-col">
+                {departments.map((dept) => (
+                  <SidebarLink
+                    key={dept.key}
+                    href={dept.path}
+                    active={pathname.startsWith(dept.path)}
+                    icon={dept.icon}
+                    label={dept.name}
+                  />
+                ))}
+              </nav>
+            </>
+          )}
         </div>
 
         <div className="border-t border-gray-100 p-4">

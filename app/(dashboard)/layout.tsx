@@ -33,6 +33,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <Sidebar
             allowedKeys={workspace.scope === "restricted" ? workspace.departments.map((d) => d.key) : undefined}
             showEditionManagement={workspace.scope === "full"}
+            showRoleManagement={workspace.scope === "full" && (workspace.role === "owner" || workspace.role === "admin")}
             homeHref={
               workspace.scope === "restricted" && workspace.departments[0]
                 ? departmentByKey(workspace.departments[0].key).path

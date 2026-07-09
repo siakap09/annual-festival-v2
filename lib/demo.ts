@@ -55,4 +55,5 @@ export const demoWorkspace: Workspace = {
   currentEdition: demoEdition,
   departments: demoDepartments,
   scope: "full",
+  role: "owner",
 };
