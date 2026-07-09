@@ -31,7 +31,7 @@ export async function signup(formData: FormData) {
   redirect(`/login?message=${encodeURIComponent("Check your email to confirm your account, then sign in.")}`);
 }
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(): Promise<{ url?: string; error?: string }> {
   assertNotDemo();
   const supabase = await createClient();
   const headerList = await headers();
@@ -45,9 +45,15 @@ export async function signInWithGoogle() {
   });
 
   if (error || !data.url) {
-    redirect(`/login?error=${encodeURIComponent(error?.message ?? "Failed to start Google sign-in")}`);
+    return { error: error?.message ?? "Failed to start Google sign-in" };
   }
-  redirect(data.url);
+
+  // Return the URL instead of calling redirect() here: @cloudflare/next-on-pages
+  // cannot handle a Server Action calling redirect() with an external absolute
+  // URL (confirmed via isolated local repro -- fails identically for any
+  // external target, not just this one). The caller navigates client-side
+  // instead via window.location.href.
+  return { url: data.url };
 }
 
 export async function logout() {
