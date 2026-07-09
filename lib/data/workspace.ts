@@ -15,9 +15,21 @@ export interface Workspace {
   scope: "full" | "restricted";
   /** The viewer's org-level role. null for restricted (scoped) users, who have no organization_members row. */
   role: OrgRole | null;
+  /**
+   * Restricted users only: department_id -> allowed checkpoints ("booths").
+   * null = whole-department grant (unrestricted). Absent key = no access at
+   * all (shouldn't happen for a department already in `departments`). Empty
+   * for full-scope users, who are never checkpoint-restricted.
+   */
+  checkpointsByDepartment: Record<string, number[] | null>;
 }
 
-type ScopedAccessRow = { edition_id: string; department_id: string; access_level: string };
+type ScopedAccessRow = {
+  edition_id: string;
+  department_id: string;
+  access_level: string;
+  checkpoint: number | null;
+};
 
 async function buildScopedWorkspace(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -39,9 +51,21 @@ async function buildScopedWorkspace(
   const currentEdition =
     editionList.find((e) => e.id === cookieEditionId) ?? editionList[0];
 
-  const allowedDeptIdsForCurrent = scoped
-    .filter((s) => s.edition_id === currentEdition.id)
-    .map((s) => s.department_id);
+  const scopedForCurrent = scoped.filter((s) => s.edition_id === currentEdition.id);
+  const allowedDeptIdsForCurrent = scopedForCurrent.map((s) => s.department_id);
+
+  const checkpointsByDepartment: Record<string, number[] | null> = {};
+  for (const s of scopedForCurrent) {
+    if (checkpointsByDepartment[s.department_id] === null) continue; // already unrestricted
+    if (s.checkpoint === null) {
+      checkpointsByDepartment[s.department_id] = null;
+    } else {
+      checkpointsByDepartment[s.department_id] = [
+        ...(checkpointsByDepartment[s.department_id] ?? []),
+        s.checkpoint,
+      ];
+    }
+  }
 
   const { data: departments } = await supabase
     .from("departments")
@@ -67,6 +91,7 @@ async function buildScopedWorkspace(
     departments: (departments ?? []) as Department[],
     scope: "restricted",
     role: null,
+    checkpointsByDepartment,
   };
 }
 
@@ -81,13 +106,32 @@ export const getWorkspace = cache(async (): Promise<Workspace> => {
 
   if (!user) redirect("/login");
 
-  const { data: membership } = await supabase
+  let { data: membership } = await supabase
     .from("organization_members")
     .select("organization_id, role")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  if (!membership) {
+    // Self-heal: claim any pending organization_members invite left
+    // unclaimed because handle_new_user() never fired for this email
+    // (e.g. they already had an account before being invited).
+    await supabase
+      .from("organization_members")
+      .update({ user_id: user.id })
+      .is("user_id", null)
+      .eq("email", (user.email ?? "").toLowerCase());
+
+    ({ data: membership } = await supabase
+      .from("organization_members")
+      .select("organization_id, role")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle());
+  }
 
   if (!membership) {
     // Not a full org member. Self-heal: claim any pending section_access
@@ -101,7 +145,7 @@ export const getWorkspace = cache(async (): Promise<Workspace> => {
 
     const { data: scoped } = await supabase
       .from("section_access")
-      .select("edition_id, department_id, access_level")
+      .select("edition_id, department_id, access_level, checkpoint")
       .eq("user_id", user.id);
 
     if (scoped && scoped.length > 0) {
@@ -148,6 +192,7 @@ export const getWorkspace = cache(async (): Promise<Workspace> => {
     departments: (departments ?? []) as Department[],
     scope: "full",
     role: (membership.role as OrgRole) ?? null,
+    checkpointsByDepartment: {},
   };
 });
 

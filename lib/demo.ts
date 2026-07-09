@@ -56,4 +56,5 @@ export const demoWorkspace: Workspace = {
   departments: demoDepartments,
   scope: "full",
   role: "owner",
+  checkpointsByDepartment: {},
 };

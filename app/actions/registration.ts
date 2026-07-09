@@ -87,9 +87,13 @@ export async function checkInParticipant(formData: FormData) {
     return;
   }
 
-  await supabase.from("checkin_events").insert({
-    participant_id: participantId,
-    checkpoint,
-  });
+  const { data, error } = await supabase
+    .from("checkin_events")
+    .insert({ participant_id: participantId, checkpoint })
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to check students in at this booth.");
+
   revalidatePath(path);
 }

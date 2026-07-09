@@ -12,6 +12,8 @@ export async function addSectionAccess(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const accessLevel = String(formData.get("access_level") ?? "viewer");
   const path = String(formData.get("path") ?? "/editions");
+  const checkpointRaw = String(formData.get("checkpoint") ?? "").trim();
+  const checkpoint = checkpointRaw ? Number(checkpointRaw) : null;
   if (!email || !departmentId) return;
 
   const supabase = await createClient();
@@ -33,6 +35,7 @@ export async function addSectionAccess(formData: FormData) {
     department_id: department.id,
     email,
     access_level: accessLevel,
+    checkpoint,
   });
 
   if (insertError) {

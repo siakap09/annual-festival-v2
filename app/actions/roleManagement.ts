@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { assertNotDemo } from "@/lib/demo";
 import type { OrgRole } from "@/lib/types";
 
@@ -29,6 +31,51 @@ async function assertNotLastOwner(
   if ((count ?? 0) <= 1) {
     throw new Error("Cannot remove the last owner of an organization.");
   }
+}
+
+export async function inviteMember(formData: FormData) {
+  assertNotDemo();
+  const organizationId = String(formData.get("organization_id"));
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const role = String(formData.get("role") ?? "member");
+  const path = String(formData.get("path") ?? "/role-management");
+
+  if (!email) return;
+  // Owner is never settable at invite time -- the insert RLS policy also
+  // enforces this, this just avoids a round trip for an obviously-bad request.
+  if (role !== "admin" && role !== "member") {
+    throw new Error("New members can only be invited as Admin or Member.");
+  }
+
+  const supabase = await createClient();
+  const { error: insertError } = await supabase.from("organization_members").insert({
+    organization_id: organizationId,
+    email,
+    role,
+  });
+
+  if (insertError) {
+    throw new Error(insertError.message);
+  }
+
+  const headerList = await headers();
+  const origin = headerList.get("origin") ?? `https://${headerList.get("host")}`;
+
+  const admin = createAdminClient();
+  const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
+    redirectTo: `${origin}/auth/callback`,
+  });
+
+  if (inviteError && !/already been registered|already registered|already exists/i.test(inviteError.message)) {
+    // The organization_members row is already created; surface the invite
+    // failure so the admin knows the person won't get an email.
+    throw new Error(`Member added, but the invite email failed to send: ${inviteError.message}`);
+  }
+  // If the person already has an account, no email is sent here -- they'll
+  // get access automatically the next time they sign in (getWorkspace()
+  // self-heal claims the row by email).
+
+  revalidatePath(path);
 }
 
 export async function updateMemberRole(formData: FormData) {

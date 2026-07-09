@@ -14,13 +14,11 @@ export type OrgRole = "owner" | "admin" | "member";
 export interface OrganizationMember {
   id: string;
   organization_id: string;
-  user_id: string;
+  /** null = pending invite, not yet claimed by a signed-up user. */
+  user_id: string | null;
   role: OrgRole;
-  created_at: string;
-}
-
-export interface OrganizationMemberWithEmail extends OrganizationMember {
   email: string;
+  created_at: string;
 }
 
 export interface Edition {
@@ -93,6 +91,8 @@ export interface SectionAccess {
   email: string;
   user_id: string | null;
   access_level: SectionAccessLevel;
+  /** Registration Area "booth" (1-5). null = whole-department grant. */
+  checkpoint: number | null;
   created_at: string;
 }
 

@@ -16,14 +16,19 @@ export function CheckInKiosk({
   path,
   checkinUrl,
   qrDataUrl,
+  allowedCheckpoints,
 }: {
   participants: Participant[];
   reachedByParticipant: Record<string, number[]>;
   path: string;
   checkinUrl: string;
   qrDataUrl: string;
+  /** Restrict the checkpoint selector to specific booths (e.g. a booth-scoped
+   * staff member). null/undefined = all 5, unrestricted. */
+  allowedCheckpoints?: number[] | null;
 }) {
-  const [checkpoint, setCheckpoint] = useState(1);
+  const selectableCheckpoints = allowedCheckpoints ?? CHECKPOINTS;
+  const [checkpoint, setCheckpoint] = useState(selectableCheckpoints[0] ?? 1);
   const [mode, setMode] = useState<"scan" | "search">("search");
   const [query, setQuery] = useState("");
   const [pending, startTransition] = useTransition();
@@ -88,19 +93,27 @@ export function CheckInKiosk({
           Select Checkpoint
         </div>
         <div className="mb-4 grid grid-cols-5 gap-1">
-          {CHECKPOINTS.map((cp) => (
-            <button
-              key={cp}
-              type="button"
-              onClick={() => setCheckpoint(cp)}
-              className={cn(
-                "rounded py-1.5 text-sm font-semibold",
-                cp === checkpoint ? "bg-white text-indigo-700" : "bg-indigo-500/60 text-white hover:bg-indigo-500"
-              )}
-            >
-              {cp}
-            </button>
-          ))}
+          {CHECKPOINTS.map((cp) => {
+            const selectable = selectableCheckpoints.includes(cp);
+            return (
+              <button
+                key={cp}
+                type="button"
+                disabled={!selectable}
+                onClick={() => setCheckpoint(cp)}
+                className={cn(
+                  "rounded py-1.5 text-sm font-semibold",
+                  !selectable
+                    ? "cursor-not-allowed bg-indigo-500/20 text-indigo-200/50"
+                    : cp === checkpoint
+                      ? "bg-white text-indigo-700"
+                      : "bg-indigo-500/60 text-white hover:bg-indigo-500"
+                )}
+              >
+                {cp}
+              </button>
+            );
+          })}
         </div>
 
         <div className="mb-3 flex gap-2">
