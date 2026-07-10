@@ -17,15 +17,21 @@ export async function addBudgetItem(formData: FormData) {
   if (!description) return;
 
   const supabase = await createClient();
-  await supabase.from("budget_items").insert({
-    department_id: departmentId,
-    edition_id: editionId,
-    type,
-    description,
-    category: category || null,
-    amount,
-    status,
-  });
+  const { data, error } = await supabase
+    .from("budget_items")
+    .insert({
+      department_id: departmentId,
+      edition_id: editionId,
+      type,
+      description,
+      category: category || null,
+      amount,
+      status,
+    })
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to add budget items here.");
   revalidatePath(path);
 }
 
@@ -36,7 +42,14 @@ export async function updateBudgetItemStatus(formData: FormData) {
   const path = String(formData.get("path") ?? "/procurement");
 
   const supabase = await createClient();
-  await supabase.from("budget_items").update({ status }).eq("id", id);
+  const { data, error } = await supabase
+    .from("budget_items")
+    .update({ status })
+    .eq("id", id)
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to update this budget item.");
   revalidatePath(path);
 }
 
@@ -46,6 +59,13 @@ export async function deleteBudgetItem(formData: FormData) {
   const path = String(formData.get("path") ?? "/procurement");
 
   const supabase = await createClient();
-  await supabase.from("budget_items").delete().eq("id", id);
+  const { data, error } = await supabase
+    .from("budget_items")
+    .delete()
+    .eq("id", id)
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to delete this budget item.");
   revalidatePath(path);
 }

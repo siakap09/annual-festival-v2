@@ -31,6 +31,7 @@ export function RoleManagementTable({
     <div className="space-y-4">
       <ActionForm
         action={inviteMember}
+        resetOnSuccess
         className="flex flex-wrap items-end gap-2 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
       >
         <input type="hidden" name="organization_id" value={organizationId} />

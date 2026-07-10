@@ -19,16 +19,22 @@ export async function addRecord(formData: FormData) {
   if (!title) return;
 
   const supabase = await createClient();
-  await supabase.from("department_records").insert({
-    department_id: departmentId,
-    kind,
-    title,
-    subtitle: subtitle || null,
-    amount,
-    status: status || null,
-    due_date: dueDate,
-    notes: notes || null,
-  });
+  const { data, error } = await supabase
+    .from("department_records")
+    .insert({
+      department_id: departmentId,
+      kind,
+      title,
+      subtitle: subtitle || null,
+      amount,
+      status: status || null,
+      due_date: dueDate,
+      notes: notes || null,
+    })
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to add records here.");
   revalidatePath(path);
 }
 
@@ -39,7 +45,14 @@ export async function updateRecordStatus(formData: FormData) {
   const path = String(formData.get("path") ?? "/");
 
   const supabase = await createClient();
-  await supabase.from("department_records").update({ status }).eq("id", id);
+  const { data, error } = await supabase
+    .from("department_records")
+    .update({ status })
+    .eq("id", id)
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to update this record.");
   revalidatePath(path);
 }
 
@@ -49,6 +62,13 @@ export async function deleteRecord(formData: FormData) {
   const path = String(formData.get("path") ?? "/");
 
   const supabase = await createClient();
-  await supabase.from("department_records").delete().eq("id", id);
+  const { data, error } = await supabase
+    .from("department_records")
+    .delete()
+    .eq("id", id)
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to delete this record.");
   revalidatePath(path);
 }

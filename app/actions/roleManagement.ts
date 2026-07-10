@@ -33,14 +33,18 @@ async function assertNotLastOwner(
   }
 }
 
-export async function inviteMember(formData: FormData) {
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ROLE_LABEL: Record<string, string> = { admin: "Admin", member: "Member" };
+
+export async function inviteMember(formData: FormData): Promise<string> {
   assertNotDemo();
   const organizationId = String(formData.get("organization_id"));
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const role = String(formData.get("role") ?? "member");
   const path = String(formData.get("path") ?? "/role-management");
 
-  if (!email) return;
+  if (!email) throw new Error("Enter an email address.");
+  if (!EMAIL_RE.test(email)) throw new Error("Enter a valid email address.");
   // Owner is never settable at invite time -- the insert RLS policy also
   // enforces this, this just avoids a round trip for an obviously-bad request.
   if (role !== "admin" && role !== "member") {
@@ -48,20 +52,54 @@ export async function inviteMember(formData: FormData) {
   }
 
   const supabase = await createClient();
+
+  const { data: existingRow } = await supabase
+    .from("organization_members")
+    .select("id, user_id")
+    .eq("organization_id", organizationId)
+    .eq("email", email)
+    .maybeSingle();
+
+  if (existingRow) {
+    throw new Error(
+      existingRow.user_id
+        ? `${email} is already a member of this organization.`
+        : `${email} has already been invited.`
+    );
+  }
+
+  const admin = createAdminClient();
+
+  // Check whether this email already has an account, so we can link it
+  // immediately instead of leaving user_id null until their next login.
+  // generateLink's "recovery" type only succeeds for an existing user, and
+  // we never send the resulting link anywhere -- we just want the user id.
+  const { data: existingAuth } = await admin.auth.admin.generateLink({
+    type: "recovery",
+    email,
+  });
+  const existingUserId = existingAuth?.user?.id ?? null;
+
   const { error: insertError } = await supabase.from("organization_members").insert({
     organization_id: organizationId,
     email,
     role,
+    user_id: existingUserId,
   });
 
   if (insertError) {
     throw new Error(insertError.message);
   }
 
+  revalidatePath(path);
+
+  if (existingUserId) {
+    return `Added ${email} as ${ROLE_LABEL[role]} -- they already have an account and can access it now.`;
+  }
+
   const headerList = await headers();
   const origin = headerList.get("origin") ?? `https://${headerList.get("host")}`;
 
-  const admin = createAdminClient();
   const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
     redirectTo: `${origin}/auth/callback`,
   });
@@ -71,11 +109,8 @@ export async function inviteMember(formData: FormData) {
     // failure so the admin knows the person won't get an email.
     throw new Error(`Member added, but the invite email failed to send: ${inviteError.message}`);
   }
-  // If the person already has an account, no email is sent here -- they'll
-  // get access automatically the next time they sign in (getWorkspace()
-  // self-heal claims the row by email).
 
-  revalidatePath(path);
+  return `Invited ${email} as ${ROLE_LABEL[role]}. They'll get an email to set up their account.`;
 }
 
 export async function updateMemberRole(formData: FormData) {

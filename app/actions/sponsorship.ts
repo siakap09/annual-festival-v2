@@ -17,16 +17,22 @@ export async function addSponsor(formData: FormData) {
   if (!name) return;
 
   const supabase = await createClient();
-  await supabase.from("sponsors").insert({
-    department_id: departmentId,
-    edition_id: editionId,
-    name,
-    contact_name: contactName || null,
-    contact_email: contactEmail || null,
-    amount,
-    is_vvip: isVvip,
-    stage: "lead",
-  });
+  const { data, error } = await supabase
+    .from("sponsors")
+    .insert({
+      department_id: departmentId,
+      edition_id: editionId,
+      name,
+      contact_name: contactName || null,
+      contact_email: contactEmail || null,
+      amount,
+      is_vvip: isVvip,
+      stage: "lead",
+    })
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to add sponsors here.");
   revalidatePath(path);
 }
 
@@ -37,7 +43,14 @@ export async function updateSponsorStage(formData: FormData) {
   const path = String(formData.get("path") ?? "/sponsorship");
 
   const supabase = await createClient();
-  await supabase.from("sponsors").update({ stage }).eq("id", id);
+  const { data, error } = await supabase
+    .from("sponsors")
+    .update({ stage })
+    .eq("id", id)
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to update this sponsor.");
   revalidatePath(path);
 }
 
@@ -47,7 +60,14 @@ export async function deleteSponsor(formData: FormData) {
   const path = String(formData.get("path") ?? "/sponsorship");
 
   const supabase = await createClient();
-  await supabase.from("sponsors").delete().eq("id", id);
+  const { data, error } = await supabase
+    .from("sponsors")
+    .delete()
+    .eq("id", id)
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to delete this sponsor.");
   revalidatePath(path);
 }
 
@@ -62,13 +82,19 @@ export async function addVvipGuest(formData: FormData) {
   if (!name) return;
 
   const supabase = await createClient();
-  await supabase.from("vvip_guests").insert({
-    department_id: departmentId,
-    edition_id: editionId,
-    name,
-    title: title || null,
-    organization: organization || null,
-  });
+  const { data, error } = await supabase
+    .from("vvip_guests")
+    .insert({
+      department_id: departmentId,
+      edition_id: editionId,
+      name,
+      title: title || null,
+      organization: organization || null,
+    })
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to add VVIP guests here.");
   revalidatePath(path);
 }
 
@@ -84,13 +110,19 @@ export async function addSponsorPackage(formData: FormData) {
   if (!name) return;
 
   const supabase = await createClient();
-  await supabase.from("sponsor_packages").insert({
-    department_id: departmentId,
-    edition_id: editionId,
-    name,
-    price,
-    benefits: benefits || null,
-    max_slots: maxSlots,
-  });
+  const { data, error } = await supabase
+    .from("sponsor_packages")
+    .insert({
+      department_id: departmentId,
+      edition_id: editionId,
+      name,
+      price,
+      benefits: benefits || null,
+      max_slots: maxSlots,
+    })
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to add sponsor packages here.");
   revalidatePath(path);
 }

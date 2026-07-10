@@ -13,7 +13,13 @@ export async function addTask(formData: FormData) {
   if (!title) return;
 
   const supabase = await createClient();
-  await supabase.from("tasks").insert({ department_id: departmentId, title, status });
+  const { data, error } = await supabase
+    .from("tasks")
+    .insert({ department_id: departmentId, title, status })
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to add tasks here.");
   revalidatePath(path);
 }
 
@@ -24,7 +30,14 @@ export async function updateTaskStatus(formData: FormData) {
   const path = String(formData.get("path") ?? "/oc");
 
   const supabase = await createClient();
-  await supabase.from("tasks").update({ status }).eq("id", taskId);
+  const { data, error } = await supabase
+    .from("tasks")
+    .update({ status })
+    .eq("id", taskId)
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to update this task.");
   revalidatePath(path);
 }
 
@@ -34,7 +47,14 @@ export async function deleteTask(formData: FormData) {
   const path = String(formData.get("path") ?? "/oc");
 
   const supabase = await createClient();
-  await supabase.from("tasks").delete().eq("id", taskId);
+  const { data, error } = await supabase
+    .from("tasks")
+    .delete()
+    .eq("id", taskId)
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to delete this task.");
   revalidatePath(path);
 }
 
@@ -49,13 +69,19 @@ export async function addManpower(formData: FormData) {
   if (!name) return;
 
   const supabase = await createClient();
-  await supabase.from("manpower").insert({
-    department_id: departmentId,
-    type,
-    name,
-    role: role || null,
-    contact: contact || null,
-  });
+  const { data, error } = await supabase
+    .from("manpower")
+    .insert({
+      department_id: departmentId,
+      type,
+      name,
+      role: role || null,
+      contact: contact || null,
+    })
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to add manpower here.");
   revalidatePath(path);
 }
 
@@ -65,7 +91,14 @@ export async function removeManpower(formData: FormData) {
   const path = String(formData.get("path") ?? "/oc");
 
   const supabase = await createClient();
-  await supabase.from("manpower").delete().eq("id", id);
+  const { data, error } = await supabase
+    .from("manpower")
+    .delete()
+    .eq("id", id)
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to remove this manpower entry.");
   revalidatePath(path);
 }
 
@@ -78,11 +111,17 @@ export async function addTeamAccess(formData: FormData) {
   if (!email) return;
 
   const supabase = await createClient();
-  await supabase.from("team_access").insert({
-    department_id: departmentId,
-    email,
-    access_level: accessLevel,
-  });
+  const { data, error } = await supabase
+    .from("team_access")
+    .insert({
+      department_id: departmentId,
+      email,
+      access_level: accessLevel,
+    })
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to manage team access here.");
   revalidatePath(path);
 }
 
@@ -92,7 +131,14 @@ export async function removeTeamAccess(formData: FormData) {
   const path = String(formData.get("path") ?? "/oc");
 
   const supabase = await createClient();
-  await supabase.from("team_access").delete().eq("id", id);
+  const { data, error } = await supabase
+    .from("team_access")
+    .delete()
+    .eq("id", id)
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to remove this team access entry.");
   revalidatePath(path);
 }
 
@@ -108,11 +154,17 @@ export async function addAnnouncement(formData: FormData) {
   if (!title) return;
 
   const supabase = await createClient();
-  await supabase.from("announcements").insert({
-    edition_id: editionId,
-    department_id: departmentId,
-    title,
-    body: body || null,
-  });
+  const { data, error } = await supabase
+    .from("announcements")
+    .insert({
+      edition_id: editionId,
+      department_id: departmentId,
+      title,
+      body: body || null,
+    })
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to post announcements here.");
   revalidatePath(path);
 }

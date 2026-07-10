@@ -65,7 +65,14 @@ export async function updateEditionStatus(formData: FormData) {
   const status = String(formData.get("status"));
   const supabase = await createClient();
 
-  await supabase.from("editions").update({ status }).eq("id", editionId);
+  const { data, error } = await supabase
+    .from("editions")
+    .update({ status })
+    .eq("id", editionId)
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to change this edition's status.");
   revalidatePath("/editions");
 }
 
@@ -74,7 +81,14 @@ export async function archiveEdition(formData: FormData) {
   const editionId = String(formData.get("edition_id"));
   const supabase = await createClient();
 
-  await supabase.from("editions").update({ status: "archived" }).eq("id", editionId);
+  const { data, error } = await supabase
+    .from("editions")
+    .update({ status: "archived" })
+    .eq("id", editionId)
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to archive this edition.");
   revalidatePath("/editions");
 }
 
@@ -146,7 +160,14 @@ export async function updateWaitlistSetting(formData: FormData) {
   const enabled = formData.get("enable_waitlist") === "on";
   const supabase = await createClient();
 
-  await supabase.from("editions").update({ enable_waitlist: enabled }).eq("id", editionId);
+  const { data, error } = await supabase
+    .from("editions")
+    .update({ enable_waitlist: enabled })
+    .eq("id", editionId)
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to change this edition's settings.");
   revalidatePath("/oc");
 }
 
@@ -156,6 +177,13 @@ export async function updateDepartmentLead(formData: FormData) {
   const leadName = String(formData.get("lead_name") ?? "").trim();
   const supabase = await createClient();
 
-  await supabase.from("departments").update({ lead_name: leadName || null }).eq("id", departmentId);
+  const { data, error } = await supabase
+    .from("departments")
+    .update({ lead_name: leadName || null })
+    .eq("id", departmentId)
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to update this department.");
   revalidatePath("/", "layout");
 }

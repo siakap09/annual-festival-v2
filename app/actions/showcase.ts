@@ -16,14 +16,20 @@ export async function addCueBlock(formData: FormData) {
   if (!title) return;
 
   const supabase = await createClient();
-  await supabase.from("cue_blocks").insert({
-    department_id: departmentId,
-    day,
-    title,
-    start_time: startTime || null,
-    end_time: endTime || null,
-    performer: performer || null,
-  });
+  const { data, error } = await supabase
+    .from("cue_blocks")
+    .insert({
+      department_id: departmentId,
+      day,
+      title,
+      start_time: startTime || null,
+      end_time: endTime || null,
+      performer: performer || null,
+    })
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to add cue blocks here.");
   revalidatePath(path);
 }
 
@@ -33,6 +39,13 @@ export async function deleteCueBlock(formData: FormData) {
   const path = String(formData.get("path") ?? "/showcase");
 
   const supabase = await createClient();
-  await supabase.from("cue_blocks").delete().eq("id", id);
+  const { data, error } = await supabase
+    .from("cue_blocks")
+    .delete()
+    .eq("id", id)
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to delete this cue block.");
   revalidatePath(path);
 }
