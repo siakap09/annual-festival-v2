@@ -93,24 +93,16 @@ export async function inviteMember(formData: FormData): Promise<string> {
 
   revalidatePath(path);
 
-  if (existingUserId) {
-    return `Added ${email} as ${ROLE_LABEL[role]} -- they already have an account and can access it now.`;
-  }
-
+  // No invite email is sent -- the pending row (or immediate user_id link,
+  // for an existing account) is enough on its own: handle_new_user() claims
+  // it on signup, and getWorkspace()'s self-heal claims it on next login for
+  // someone who already had an account. The org admin shares the login link
+  // with the person directly (WhatsApp, etc.).
   const headerList = await headers();
   const origin = headerList.get("origin") ?? `https://${headerList.get("host")}`;
+  const loginUrl = `${origin}/login`;
 
-  const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${origin}/auth/callback`,
-  });
-
-  if (inviteError && !/already been registered|already registered|already exists/i.test(inviteError.message)) {
-    // The organization_members row is already created; surface the invite
-    // failure so the admin knows the person won't get an email.
-    throw new Error(`Member added, but the invite email failed to send: ${inviteError.message}`);
-  }
-
-  return `Invited ${email} as ${ROLE_LABEL[role]}. They'll get an email to set up their account.`;
+  return `Added ${email} as ${ROLE_LABEL[role]}. They can now sign in at ${loginUrl} using that email.`;
 }
 
 export async function updateMemberRole(formData: FormData) {
