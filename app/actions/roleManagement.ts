@@ -34,21 +34,22 @@ async function assertNotLastOwner(
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const ROLE_LABEL: Record<string, string> = { admin: "Admin", member: "Member" };
+const ROLE_LABEL: Record<string, string> = { admin: "Admin" };
 
 export async function inviteMember(formData: FormData): Promise<string> {
   assertNotDemo();
   const organizationId = String(formData.get("organization_id"));
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const role = String(formData.get("role") ?? "member");
+  const role = String(formData.get("role") ?? "admin");
   const path = String(formData.get("path") ?? "/role-management");
 
   if (!email) throw new Error("Enter an email address.");
   if (!EMAIL_RE.test(email)) throw new Error("Enter a valid email address.");
   // Owner is never settable at invite time -- the insert RLS policy also
   // enforces this, this just avoids a round trip for an obviously-bad request.
-  if (role !== "admin" && role !== "member") {
-    throw new Error("New members can only be invited as Admin or Member.");
+  // "member" no longer exists as a role -- new invites can only be Admin.
+  if (role !== "admin") {
+    throw new Error("New members can only be invited as Admin.");
   }
 
   const supabase = await createClient();

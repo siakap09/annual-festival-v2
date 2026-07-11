@@ -37,8 +37,7 @@ export function RoleManagementTable({
         <input type="hidden" name="organization_id" value={organizationId} />
         <input type="hidden" name="path" value={path} />
         <Input name="email" type="email" placeholder="email@example.com" required className="max-w-xs" />
-        <Select name="role" defaultValue="member" className="max-w-[10rem]">
-          <option value="member">Member</option>
+        <Select name="role" defaultValue="admin" className="max-w-[10rem]">
           <option value="admin">Admin</option>
         </Select>
         <Button type="submit" className="!px-3 !py-2 text-xs">
@@ -89,7 +88,10 @@ export function RoleManagementTable({
                             className="!py-1 text-xs"
                             onChange={(e) => e.currentTarget.form?.requestSubmit()}
                           >
-                            <option value="member">Member</option>
+                            {/* "member" is no longer assignable, but a legacy row still
+                                holding it needs a matching option so the select doesn't
+                                silently mismatch its displayed value against the DB. */}
+                            {m.role === "member" && <option value="member">Member</option>}
                             <option value="admin">Admin</option>
                             {isOwner && <option value="owner">Superadmin</option>}
                           </Select>

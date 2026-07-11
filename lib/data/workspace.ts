@@ -11,13 +11,9 @@ export interface Workspace {
   editions: Edition[];
   currentEdition: Edition;
   departments: Department[];
-  /**
-   * "restricted" = access comes entirely from section_access grants, not
-   * org-wide role. Applies to users with no organization_members row at all,
-   * and to "member"-role users (who have a row but no default org access).
-   */
+  /** "restricted" = user only holds section_access grants, not an organization_members row. */
   scope: "full" | "restricted";
-  /** The viewer's org-level role. null only when there's no organization_members row at all. */
+  /** The viewer's org-level role. null for restricted (scoped) users, who have no organization_members row. */
   role: OrgRole | null;
   /**
    * Restricted users only: department_id -> allowed checkpoints ("booths").
@@ -38,8 +34,7 @@ type ScopedAccessRow = {
 async function buildScopedWorkspace(
   supabase: Awaited<ReturnType<typeof createClient>>,
   user: { id: string; email?: string },
-  scoped: ScopedAccessRow[],
-  role: OrgRole | null = null
+  scoped: ScopedAccessRow[]
 ): Promise<Workspace> {
   const editionIds = Array.from(new Set(scoped.map((s) => s.edition_id)));
 
@@ -95,7 +90,7 @@ async function buildScopedWorkspace(
     currentEdition,
     departments: (departments ?? []) as Department[],
     scope: "restricted",
-    role,
+    role: null,
     checkpointsByDepartment,
   };
 }
@@ -138,14 +133,10 @@ export const getWorkspace = cache(async (): Promise<Workspace> => {
       .maybeSingle());
   }
 
-  // A plain "member" has no org-wide access by default -- their workspace is
-  // built entirely from section_access grants, exactly like someone with no
-  // organization_members row at all (their role is just carried through for
-  // display/UI gating instead of null). Only "owner"/"admin" get full scope.
-  if (!membership || membership.role === "member") {
-    // Self-heal: claim any pending section_access rows left unclaimed
-    // because handle_new_user() never fired for this email (e.g. they
-    // already had an account before being invited).
+  if (!membership) {
+    // Not a full org member. Self-heal: claim any pending section_access
+    // rows left unclaimed because handle_new_user() never fired for this
+    // email (e.g. they already had an account before being invited).
     await supabase
       .from("section_access")
       .update({ user_id: user.id })
@@ -158,12 +149,7 @@ export const getWorkspace = cache(async (): Promise<Workspace> => {
       .eq("user_id", user.id);
 
     if (scoped && scoped.length > 0) {
-      return buildScopedWorkspace(
-        supabase,
-        user,
-        scoped as ScopedAccessRow[],
-        membership?.role === "member" ? "member" : null
-      );
+      return buildScopedWorkspace(supabase, user, scoped as ScopedAccessRow[]);
     }
 
     redirect("/login");
