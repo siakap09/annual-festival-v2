@@ -1,9 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { assertNotDemo } from "@/lib/demo";
 
 export async function addSectionAccess(formData: FormData) {
@@ -42,22 +40,33 @@ export async function addSectionAccess(formData: FormData) {
     throw new Error(insertError.message);
   }
 
-  const headerList = await headers();
-  const origin = headerList.get("origin") ?? `https://${headerList.get("host")}`;
+  // No invite email is sent -- the section_access row is enough on its own:
+  // handle_new_user() claims it on signup, and getWorkspace()'s self-heal
+  // claims it on next login for someone who already had an account. (Same
+  // fix as Role Management's Add User -- inviteUserByEmail() was failing
+  // here too, since SMTP isn't configured on this Supabase project, and
+  // that failure was surfacing as a hard error after the grant had already
+  // been created successfully.)
+  revalidatePath(path);
+}
 
-  const admin = createAdminClient();
-  const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${origin}/auth/callback`,
-  });
+export async function updateSectionAccess(formData: FormData) {
+  assertNotDemo();
+  const id = String(formData.get("id"));
+  const accessLevel = String(formData.get("access_level") ?? "viewer");
+  const path = String(formData.get("path") ?? "/editions");
+  const checkpointRaw = String(formData.get("checkpoint") ?? "").trim();
+  const checkpoint = checkpointRaw ? Number(checkpointRaw) : null;
 
-  if (inviteError && !/already been registered|already registered|already exists/i.test(inviteError.message)) {
-    // The section_access row is already created; surface the invite failure
-    // so the admin knows the person won't get an email (e.g. bad service key).
-    throw new Error(`Access granted, but the invite email failed to send: ${inviteError.message}`);
-  }
-  // If the person already has an account, no email is sent here — they'll
-  // get access automatically the next time they sign in (getWorkspace()
-  // self-heal claims the row by email).
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("section_access")
+    .update({ access_level: accessLevel, checkpoint })
+    .eq("id", id)
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to update this grant.");
 
   revalidatePath(path);
 }
@@ -68,6 +77,14 @@ export async function removeSectionAccess(formData: FormData) {
   const path = String(formData.get("path") ?? "/editions");
 
   const supabase = await createClient();
-  await supabase.from("section_access").delete().eq("id", id);
+  const { data, error } = await supabase
+    .from("section_access")
+    .delete()
+    .eq("id", id)
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to remove this access grant.");
+
   revalidatePath(path);
 }

@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { addSectionAccess, removeSectionAccess } from "@/app/actions/sectionAccess";
+import { addSectionAccess, removeSectionAccess, updateSectionAccess } from "@/app/actions/sectionAccess";
 import { InlineToggle } from "@/components/ui/InlineToggle";
 import { ActionForm } from "@/components/ui/ActionForm";
 import { Input, Select } from "@/components/ui/fields";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
 import type { Department, SectionAccess } from "@/lib/types";
 
 const BOOTHS = [1, 2, 3, 4, 5];
@@ -79,22 +78,49 @@ export function SectionAccessButton({
               {access.map((a) => {
                 const dept = departments.find((d) => d.id === a.department_id);
                 return (
-                  <li key={a.id} className="flex items-center justify-between py-2 text-sm">
-                    <div className="min-w-0">
-                      <div className="truncate text-gray-800">{a.email}</div>
-                      <div className="mt-0.5 flex items-center gap-1.5 text-xs text-gray-400">
-                        <span>{dept?.name ?? "Unknown section"}</span>
-                        {a.checkpoint && <span>· Booth {a.checkpoint}</span>}
-                        <Badge tone={a.access_level}>{a.access_level}</Badge>
-                        <span>{a.user_id ? "· active" : "· invited"}</span>
+                  <li key={a.id} className="py-2 text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="truncate text-gray-800">{a.email}</div>
+                        <div className="mt-0.5 text-xs text-gray-400">
+                          {dept?.name ?? "Unknown section"} · {a.user_id ? "active" : "invited"}
+                        </div>
                       </div>
+                      <ActionForm action={removeSectionAccess}>
+                        <input type="hidden" name="id" value={a.id} />
+                        <input type="hidden" name="path" value={path} />
+                        <button type="submit" className="shrink-0 text-xs text-gray-400 hover:text-red-500">
+                          Remove
+                        </button>
+                      </ActionForm>
                     </div>
-                    <ActionForm action={removeSectionAccess}>
+                    <ActionForm action={updateSectionAccess} className="mt-1.5 flex items-center gap-1.5">
                       <input type="hidden" name="id" value={a.id} />
                       <input type="hidden" name="path" value={path} />
-                      <button type="submit" className="shrink-0 text-xs text-gray-400 hover:text-red-500">
-                        Remove
-                      </button>
+                      {dept?.key === "registration_area" && (
+                        <select
+                          name="checkpoint"
+                          defaultValue={a.checkpoint ?? ""}
+                          onChange={(e) => e.currentTarget.form?.requestSubmit()}
+                          className="rounded-md border border-gray-300 bg-white px-1.5 py-0.5 text-xs text-gray-700 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                        >
+                          <option value="">All booths</option>
+                          {BOOTHS.map((b) => (
+                            <option key={b} value={b}>
+                              Booth {b}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      <select
+                        name="access_level"
+                        defaultValue={a.access_level}
+                        onChange={(e) => e.currentTarget.form?.requestSubmit()}
+                        className="rounded-md border border-gray-300 bg-white px-1.5 py-0.5 text-xs text-gray-700 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                      >
+                        <option value="viewer">Viewer</option>
+                        <option value="editor">Editor</option>
+                      </select>
                     </ActionForm>
                   </li>
                 );

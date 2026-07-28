@@ -2,10 +2,9 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { checkInParticipant } from "@/app/actions/registration";
-import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Input } from "@/components/ui/fields";
 import { ShareCheckinLink } from "@/components/department/ShareCheckinLink";
-import { cn, percent } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import type { Participant } from "@/lib/types";
 
 const CHECKPOINTS = [1, 2, 3, 4, 5];
@@ -24,10 +23,13 @@ export function CheckInKiosk({
   checkinUrl: string;
   qrDataUrl: string;
   /** Restrict the checkpoint selector to specific booths (e.g. a booth-scoped
-   * staff member). null/undefined = all 5, unrestricted. */
+   * staff member, or a dedicated single-booth page). null/undefined = all 5,
+   * unrestricted. Exactly one entry hides the selector entirely -- there's
+   * nothing to choose. */
   allowedCheckpoints?: number[] | null;
 }) {
   const selectableCheckpoints = allowedCheckpoints ?? CHECKPOINTS;
+  const locked = selectableCheckpoints.length === 1;
   const [checkpoint, setCheckpoint] = useState(selectableCheckpoints[0] ?? 1);
   const [mode, setMode] = useState<"scan" | "search">("search");
   const [query, setQuery] = useState("");
@@ -69,8 +71,15 @@ export function CheckInKiosk({
     formData.set("checkpoint", String(checkpoint));
     formData.set("path", path);
     startTransition(async () => {
-      await checkInParticipant(formData);
-      setFeedback(`✅ ${participant.student_name} checked in at CP${checkpoint}`);
+      try {
+        await checkInParticipant(formData);
+        setFeedback(`✅ ${participant.student_name} checked in at CP${checkpoint}`);
+      } catch (err) {
+        // Server-side rejection (e.g. a race with another booth's scan since
+        // this page last loaded) -- the pre-check above already covers the
+        // common case, this is the fallback so a rejection is never silent.
+        setFeedback(err instanceof Error ? err.message : "Something went wrong.");
+      }
     });
   }
 
@@ -89,32 +98,40 @@ export function CheckInKiosk({
           ))}
         </div>
 
-        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-indigo-100">
-          Select Checkpoint
-        </div>
-        <div className="mb-4 grid grid-cols-5 gap-1">
-          {CHECKPOINTS.map((cp) => {
-            const selectable = selectableCheckpoints.includes(cp);
-            return (
-              <button
-                key={cp}
-                type="button"
-                disabled={!selectable}
-                onClick={() => setCheckpoint(cp)}
-                className={cn(
-                  "rounded py-1.5 text-sm font-semibold",
-                  !selectable
-                    ? "cursor-not-allowed bg-indigo-500/20 text-indigo-200/50"
-                    : cp === checkpoint
-                      ? "bg-white text-indigo-700"
-                      : "bg-indigo-500/60 text-white hover:bg-indigo-500"
-                )}
-              >
-                {cp}
-              </button>
-            );
-          })}
-        </div>
+        {locked ? (
+          <div className="mb-4 rounded bg-white py-1.5 text-center text-sm font-semibold text-indigo-700">
+            Booth {selectableCheckpoints[0]}
+          </div>
+        ) : (
+          <>
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-indigo-100">
+              Select Checkpoint
+            </div>
+            <div className="mb-4 grid grid-cols-5 gap-1">
+              {CHECKPOINTS.map((cp) => {
+                const selectable = selectableCheckpoints.includes(cp);
+                return (
+                  <button
+                    key={cp}
+                    type="button"
+                    disabled={!selectable}
+                    onClick={() => setCheckpoint(cp)}
+                    className={cn(
+                      "rounded py-1.5 text-sm font-semibold",
+                      !selectable
+                        ? "cursor-not-allowed bg-indigo-500/20 text-indigo-200/50"
+                        : cp === checkpoint
+                          ? "bg-white text-indigo-700"
+                          : "bg-indigo-500/60 text-white hover:bg-indigo-500"
+                    )}
+                  >
+                    {cp}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
 
         <div className="mb-3 flex gap-2">
           <button
@@ -186,46 +203,6 @@ export function CheckInKiosk({
 
         <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
           Order rule: Students must go 1 → 2 → 3 → 4 → 5. Skipping is blocked.
-        </div>
-
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <h3 className="mb-3 text-sm font-semibold text-gray-800">Live Checkpoint Progress</h3>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
-            {CHECKPOINTS.map((cp) => (
-              <div key={cp} className="rounded-md border border-gray-100 p-3 text-center">
-                <div className="text-xs text-gray-400">CP {cp}</div>
-                <div className="text-xl font-bold text-indigo-600">{cpCounts[cp] ?? 0}</div>
-                <div className="mt-2">
-                  <ProgressBar value={percent(cpCounts[cp] ?? 0, participants.length)} colorClass="bg-indigo-500" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-800">Student Progress</h3>
-            <span className="text-xs text-gray-400">{participants.length} students</span>
-          </div>
-          {participants.length === 0 ? (
-            <p className="py-8 text-center text-sm text-gray-400">No students registered yet</p>
-          ) : (
-            <ul className="divide-y divide-gray-100">
-              {participants.map((p) => {
-                const reached = (reachedByParticipant[p.id] ?? []).length;
-                return (
-                  <li key={p.id} className="flex items-center justify-between py-2 text-sm">
-                    <span className="text-gray-800">{p.student_name}</span>
-                    <div className="flex w-32 items-center gap-2">
-                      <ProgressBar value={percent(reached, 5)} />
-                      <span className="w-8 text-right text-xs text-gray-400">{reached}/5</span>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
         </div>
       </div>
     </div>

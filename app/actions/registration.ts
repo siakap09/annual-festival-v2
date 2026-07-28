@@ -77,14 +77,19 @@ export async function checkInParticipant(formData: FormData) {
     .eq("participant_id", participantId);
 
   const reached = new Set((existing ?? []).map((e) => e.checkpoint));
-  if (checkpoint > 1 && !reached.has(checkpoint - 1)) {
-    // order rule: must complete checkpoints sequentially
-    revalidatePath(path);
-    return;
-  }
+
   if (reached.has(checkpoint)) {
-    revalidatePath(path);
-    return;
+    throw new Error(`Already checked in at Booth ${checkpoint}.`);
+  }
+
+  if (checkpoint > 1 && !reached.has(checkpoint - 1)) {
+    // Order rule: must complete checkpoints sequentially -- reject with the
+    // specific booth they skipped instead of silently no-op'ing, so a stale
+    // client or a race between two staff scanning concurrently still gets a
+    // clear rejection instead of looking like nothing happened.
+    throw new Error(
+      `Cannot check in at Booth ${checkpoint} -- this student hasn't checked in at Booth ${checkpoint - 1} yet.`
+    );
   }
 
   const { data, error } = await supabase

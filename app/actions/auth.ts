@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { assertNotDemo, isDemo } from "@/lib/demo";
+import { getWorkspace, resolveLandingPath } from "@/lib/data/workspace";
 
 export async function login(formData: FormData) {
   assertNotDemo();
@@ -15,7 +16,7 @@ export async function login(formData: FormData) {
   if (error) {
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
   }
-  redirect("/editions");
+  redirect(resolveLandingPath(await getWorkspace()));
 }
 
 export async function signup(formData: FormData) {

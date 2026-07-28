@@ -19,6 +19,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
     participantCount = count ?? 0;
   }
 
+  // Booths (checkpoints) available to the viewer for the sidebar's booth
+  // dropdown -- undefined = no registration_area access at all (don't show
+  // the dropdown), null = whole-department grant (all 5), array = a
+  // checkpoint-scoped subset.
+  const regDept = workspace.departments.find((d) => d.key === "registration_area");
+  const boothCheckpoints = !regDept
+    ? undefined
+    : workspace.scope === "full"
+      ? null
+      : (workspace.checkpointsByDepartment[regDept.id] ?? undefined);
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen flex-col">
@@ -34,6 +45,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             allowedKeys={workspace.scope === "restricted" ? workspace.departments.map((d) => d.key) : undefined}
             showEditionManagement={workspace.scope === "full"}
             showRoleManagement={workspace.scope === "full" && (workspace.role === "owner" || workspace.role === "admin")}
+            boothCheckpoints={boothCheckpoints}
             homeHref={
               workspace.scope === "restricted" && workspace.departments[0]
                 ? departmentByKey(workspace.departments[0].key).path

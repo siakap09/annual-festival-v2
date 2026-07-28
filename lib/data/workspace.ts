@@ -2,6 +2,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentEditionIdCookie } from "@/lib/edition-context";
+import { departmentByKey } from "@/lib/constants";
 import type { Department, Edition, Organization, OrgRole } from "@/lib/types";
 import type { DepartmentKey } from "@/lib/constants";
 
@@ -195,6 +196,29 @@ export const getWorkspace = cache(async (): Promise<Workspace> => {
     checkpointsByDepartment: {},
   };
 });
+
+/**
+ * Where a just-authenticated user should land, instead of always dropping
+ * everyone on /editions. A booth-scoped staff member assigned to exactly one
+ * checkpoint goes straight to that booth's own check-in page -- no need to
+ * find their way there manually every time they sign in.
+ */
+export function resolveLandingPath(workspace: Workspace): string {
+  if (workspace.scope === "full") return "/editions";
+
+  const dept = workspace.departments[0];
+  if (!dept) return "/editions"; // shouldn't happen -- getWorkspace() redirects to /login first if truly nothing
+
+  if (dept.key === "registration_area") {
+    const checkpoints = workspace.checkpointsByDepartment[dept.id];
+    if (checkpoints && checkpoints.length === 1) {
+      return `/registration-area/${checkpoints[0]}`;
+    }
+    return "/registration-area";
+  }
+
+  return departmentByKey(dept.key).path;
+}
 
 export function findDepartment(departments: Department[], key: DepartmentKey): Department {
   const dept = departments.find((d) => d.key === key);

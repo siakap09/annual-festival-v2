@@ -27,7 +27,7 @@ export const DEPARTMENTS: DepartmentConfig[] = [
   { key: "youthpreneur", name: "Youthpreneur", icon: "💡", path: "/youthpreneur" },
   { key: "ceo", name: "CEO Unit", icon: "🏢", path: "/ceo" },
   { key: "registration", name: "Registration", icon: "📋", path: "/registration" },
-  { key: "registration_area", name: "Registration Area", icon: "🎫", path: "/registration-area" },
+  { key: "registration_area", name: "Booth Area", icon: "🎫", path: "/registration-area" },
 ];
 
 export function departmentByKey(key: DepartmentKey): DepartmentConfig {
