@@ -109,9 +109,13 @@ export interface Participant {
   id: string;
   edition_id: string;
   student_name: string;
-  parent_name: string;
-  parent_email: string;
-  parent_phone: string;
+  /**
+   * Null when bulk-imported from AOne, which only ever exports a student's
+   * name -- these get filled in later via completeParticipantDetails().
+   */
+  parent_name: string | null;
+  parent_email: string | null;
+  parent_phone: string | null;
   confirmed: boolean;
   email_sent: boolean;
   qr_token: string;

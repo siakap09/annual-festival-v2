@@ -5,11 +5,11 @@ import { StatCard } from "@/components/ui/StatCard";
 import { Tabs } from "@/components/ui/Tabs";
 import { Field, Input } from "@/components/ui/fields";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ActionForm } from "@/components/ui/ActionForm";
+import { StudentListTable } from "@/components/department/StudentListTable";
 import { formatDate, percent } from "@/lib/utils";
-import { confirmParticipant, registerParticipant } from "@/app/actions/registration";
+import { bulkRegisterParticipants, confirmParticipant, registerParticipant } from "@/app/actions/registration";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +61,7 @@ export default async function RegistrationPage({
           activeKey={tab}
           tabs={[
             { key: "register", label: "Register Student", icon: "➕" },
+            { key: "bulk", label: "Bulk Import", icon: "📤" },
             { key: "list", label: "Student List", icon: "📄" },
             { key: "confirm", label: "Confirm Students", icon: "✅" },
           ]}
@@ -105,41 +106,39 @@ export default async function RegistrationPage({
             </div>
           )}
 
+          {tab === "bulk" && (
+            <div className="max-w-md">
+              <ActionForm action={bulkRegisterParticipants} resetOnSuccess className="space-y-4">
+                <input type="hidden" name="edition_id" value={currentEdition.id} />
+                <input type="hidden" name="path" value={path} />
+                <Field label="CSV file" required>
+                  <input
+                    type="file"
+                    name="csv_file"
+                    accept=".csv,text/csv"
+                    required
+                    className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-orange-600 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-orange-700"
+                  />
+                </Field>
+                <p className="-mt-2 text-xs text-gray-400">
+                  Only a student_name column is required (e.g. an AOne export). parent_name,
+                  parent_email, and parent_phone are optional -- add them from the Student List
+                  later if the file doesn&apos;t have them. Rows matching an already-registered
+                  student are skipped.
+                </p>
+                <Button type="submit" variant="indigo" className="w-full justify-center">
+                  Import Students
+                </Button>
+              </ActionForm>
+            </div>
+          )}
+
           {tab === "list" && (
             <div>
               {participants.length === 0 ? (
                 <EmptyState message="No students registered yet" />
               ) : (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-xs uppercase text-gray-400">
-                      <th className="pb-2">Student</th>
-                      <th className="pb-2">Parent</th>
-                      <th className="pb-2">Contact</th>
-                      <th className="pb-2">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {participants.map((p) => (
-                      <tr key={p.id}>
-                        <td className="py-2 font-medium text-gray-800">{p.student_name}</td>
-                        <td className="py-2 text-gray-600">{p.parent_name}</td>
-                        <td className="py-2 text-gray-600">
-                          {p.parent_email}
-                          <div className="text-xs text-gray-400">{p.parent_phone}</div>
-                        </td>
-                        <td className="py-2">
-                          <div className="flex gap-1">
-                            <Badge tone={p.confirmed ? "confirmed" : "pending"}>
-                              {p.confirmed ? "Confirmed" : "Pending"}
-                            </Badge>
-                            {p.waitlisted && <Badge tone="pending">Waitlisted</Badge>}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <StudentListTable participants={participants} path={path} />
               )}
             </div>
           )}
@@ -157,7 +156,7 @@ export default async function RegistrationPage({
                         <div>
                           <div className="font-medium text-gray-800">{p.student_name}</div>
                           <div className="text-xs text-gray-400">
-                            {p.parent_name} · {p.parent_email}
+                            {p.parent_name && p.parent_email ? `${p.parent_name} · ${p.parent_email}` : "Parent details not yet added"}
                           </div>
                         </div>
                         <ActionForm action={confirmParticipant}>
