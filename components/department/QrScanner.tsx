@@ -34,7 +34,13 @@ export function QrScanner({
     async function start() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
+          // Keeping the requested resolution modest (rather than the
+          // camera's native resolution, which can be several thousand
+          // pixels wide on modern phones) keeps every decode pass fast --
+          // full native resolution made scanning noticeably sluggish/
+          // unreliable without any benefit, since a QR code doesn't need
+          // high resolution to decode.
+          video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 } },
         });
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
@@ -66,7 +72,7 @@ export function QrScanner({
 
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      const ctx = canvas.getContext("2d");
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
       if (!ctx) {
         rafRef.current = requestAnimationFrame(scanLoop);
         return;

@@ -15,7 +15,11 @@ import { render as renderQrSvg } from "qrcode/lib/renderer/svg-tag";
 
 export function qrSvg(content: string, width = 200): string {
   const qrData = createQrData(content, {});
-  const svg: string = renderQrSvg(qrData, { margin: 1, width });
+  // Margin is the "quiet zone" width in QR modules -- the spec recommends
+  // at least 4. Too thin a margin (this was 1) makes real camera scanners
+  // unreliable at detecting the code at all, even though it looks fine to
+  // the eye and decodes fine from a clean digital image.
+  const svg: string = renderQrSvg(qrData, { margin: 4, width });
   // Strip the fixed width/height attributes -- the viewBox alone is enough
   // for the SVG to scale responsively via CSS. Left in place, browsers use
   // these as the element's *intrinsic* size for layout purposes (e.g. flex
