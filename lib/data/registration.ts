@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemo } from "@/lib/demo";
 import type { CheckinEvent, Participant } from "@/lib/types";
 
@@ -24,6 +25,21 @@ export async function getParticipants(editionId: string): Promise<Participant[]>
     if (!data || data.length < PAGE_SIZE) break;
   }
   return all;
+}
+
+/**
+ * Public lookup for the parent-facing QR page -- the visitor has no
+ * Supabase session (they're not staff, just a parent who opened an email
+ * link), so the normal RLS-scoped client would return nothing. Uses the
+ * service-role client instead, scoped tightly to an exact match on the
+ * qr_token itself (a random, unguessable 24-hex-char value -- effectively
+ * a capability URL), so this can never leak any other student's data.
+ */
+export async function getParticipantByQrToken(token: string): Promise<Participant | null> {
+  if (isDemo()) return null;
+  const admin = createAdminClient();
+  const { data } = await admin.from("participants").select("*").eq("qr_token", token).maybeSingle();
+  return (data as Participant | null) ?? null;
 }
 
 export async function getCheckinEvents(editionId: string): Promise<CheckinEvent[]> {

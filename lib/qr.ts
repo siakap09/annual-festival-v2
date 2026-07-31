@@ -15,7 +15,13 @@ import { render as renderQrSvg } from "qrcode/lib/renderer/svg-tag";
 
 export function qrSvg(content: string, width = 200): string {
   const qrData = createQrData(content, {});
-  return renderQrSvg(qrData, { margin: 1, width });
+  const svg: string = renderQrSvg(qrData, { margin: 1, width });
+  // Strip the fixed width/height attributes -- the viewBox alone is enough
+  // for the SVG to scale responsively via CSS. Left in place, browsers use
+  // these as the element's *intrinsic* size for layout purposes (e.g. flex
+  // min-content calculations) even when CSS overrides the rendered size,
+  // which can force a responsive container wider than its viewport.
+  return svg.replace(/^(<svg\b)([^>]*?)\swidth="[^"]*"\s+height="[^"]*"/, "$1$2");
 }
 
 export function qrSvgDataUrl(content: string, width = 200): string {

@@ -1,36 +1,40 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { assertNotDemo } from "@/lib/demo";
 import { parseCsv } from "@/lib/csv";
 import { parseXlsx } from "@/lib/xlsx";
-import { qrSvg } from "@/lib/qr";
 import { sendEmail } from "@/lib/email";
 import type { Participant } from "@/lib/types";
 
 /**
- * Emails the student's personal check-in QR (their qr_token, as an SVG
- * attachment) to the parent. Throws on failure -- callers decide whether
- * that should block the surrounding action or just be reported back.
+ * Emails a link to the student's personal check-in QR page to the parent
+ * (not an attached SVG file -- a real, mobile-friendly web page reads much
+ * better than a downloaded file opened raw in a browser tab). Throws on
+ * failure -- callers decide whether that should block the surrounding
+ * action or just be reported back.
  */
 async function sendParticipantQrEmail(participant: Pick<Participant, "student_name" | "parent_name" | "parent_email" | "qr_token">) {
   if (!participant.parent_email) {
     throw new Error("No parent email on file for this student.");
   }
-  const svg = qrSvg(participant.qr_token, 300);
+  const headerList = await headers();
+  const host = headerList.get("host") ?? "localhost:3000";
+  const protocol = host.startsWith("localhost") ? "http" : "https";
+  const qrUrl = `${protocol}://${host}/qr/${participant.qr_token}`;
+
   await sendEmail({
     to: participant.parent_email,
     subject: `${participant.student_name}'s Festival Check-in QR Code`,
     html: `
       <p>Hi ${participant.parent_name ?? "there"},</p>
       <p><strong>${participant.student_name}</strong> is registered for the festival.</p>
-      <p>Attached is their personal QR code -- please bring it (printed or on your phone) to the check-in booth on the day of the event.</p>
+      <p><a href="${qrUrl}" style="display:inline-block;padding:10px 20px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;">View Check-in QR Code</a></p>
+      <p>Show this page (on your phone or printed) at the check-in booth on the day of the event.</p>
     `.trim(),
-    text: `Hi ${participant.parent_name ?? "there"}, ${participant.student_name} is registered for the festival. Their personal QR code is attached -- please bring it (printed or on your phone) to the check-in booth on the day of the event.`,
-    attachments: [
-      { filename: `${participant.student_name.replace(/[^a-z0-9]+/gi, "-")}-qr.svg`, content: svg, contentType: "image/svg+xml" },
-    ],
+    text: `Hi ${participant.parent_name ?? "there"}, ${participant.student_name} is registered for the festival. View their check-in QR code here: ${qrUrl} -- show this page (on your phone or printed) at the check-in booth on the day of the event.`,
   });
 }
 
