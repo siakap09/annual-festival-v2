@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { getWorkspace } from "@/lib/data/workspace";
 import { getEditionsWithStats } from "@/lib/data/editions";
 import { getSectionAccessForEdition } from "@/lib/data/sectionAccess";
@@ -11,12 +12,22 @@ import { ActionForm } from "@/components/ui/ActionForm";
 import { formatDateRange } from "@/lib/utils";
 import { archiveEdition, copyEdition, setCurrentEditionAndGo } from "@/app/actions/editions";
 import { isDemo } from "@/lib/demo";
+import { departmentByKey } from "@/lib/constants";
 import type { Department } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function EditionsPage() {
   const workspace = await getWorkspace();
+
+  // Defense in depth beyond the sidebar link being hidden: a scoped/
+  // restricted user navigating here directly gets bounced to their own
+  // department instead of seeing every edition in the org.
+  if (workspace.scope !== "full") {
+    const dept = workspace.departments[0];
+    redirect(dept ? departmentByKey(dept.key).path : "/login");
+  }
+
   const stats = await getEditionsWithStats(workspace.editions);
 
   const accessByEdition = new Map<string, { departments: Department[]; access: Awaited<ReturnType<typeof getSectionAccessForEdition>> }>();

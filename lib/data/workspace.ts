@@ -107,6 +107,29 @@ export const getWorkspace = cache(async (): Promise<Workspace> => {
 
   if (!user) redirect("/login");
 
+  // Check section_access FIRST, before organization_members. A scoped grant
+  // is a deliberate, specific restriction an admin set up for this person --
+  // it must win even if this account separately has its own (likely unused)
+  // organization_members row, e.g. from the solo org handle_new_user() auto-
+  // creates for every brand-new signup. Without this ordering, anyone who'd
+  // ever logged in before being granted section_access keeps seeing their
+  // own full workspace (Edition Management included) instead of being
+  // restricted to what they were actually granted.
+  await supabase
+    .from("section_access")
+    .update({ user_id: user.id })
+    .is("user_id", null)
+    .eq("email", (user.email ?? "").toLowerCase());
+
+  const { data: scoped } = await supabase
+    .from("section_access")
+    .select("edition_id, department_id, access_level, checkpoint")
+    .eq("user_id", user.id);
+
+  if (scoped && scoped.length > 0) {
+    return buildScopedWorkspace(supabase, user, scoped as ScopedAccessRow[]);
+  }
+
   let { data: membership } = await supabase
     .from("organization_members")
     .select("organization_id, role")
@@ -135,24 +158,6 @@ export const getWorkspace = cache(async (): Promise<Workspace> => {
   }
 
   if (!membership) {
-    // Not a full org member. Self-heal: claim any pending section_access
-    // rows left unclaimed because handle_new_user() never fired for this
-    // email (e.g. they already had an account before being invited).
-    await supabase
-      .from("section_access")
-      .update({ user_id: user.id })
-      .is("user_id", null)
-      .eq("email", (user.email ?? "").toLowerCase());
-
-    const { data: scoped } = await supabase
-      .from("section_access")
-      .select("edition_id, department_id, access_level, checkpoint")
-      .eq("user_id", user.id);
-
-    if (scoped && scoped.length > 0) {
-      return buildScopedWorkspace(supabase, user, scoped as ScopedAccessRow[]);
-    }
-
     redirect("/login");
   }
 
