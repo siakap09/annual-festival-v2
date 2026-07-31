@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
-import { checkInByQrToken } from "@/app/actions/registration";
 
 /** Live camera-based QR scanner for check-in. Requests the rear camera,
  * continuously scans video frames via jsQR (pure client-side, no
@@ -101,10 +100,24 @@ export function QrScanner({
       formData.set("checkpoint", String(checkpoint));
       formData.set("path", path);
       try {
-        const message = await checkInByQrToken(formData);
-        onResult(`✅ ${message}`);
+        const res = await fetch("/api/checkin-by-qr", { method: "POST", body: formData });
+        const text = await res.text();
+        let json: { ok?: boolean; message?: string; error?: string } | null = null;
+        try {
+          json = JSON.parse(text);
+        } catch {
+          // Not JSON at all -- show the raw status/body so this is
+          // diagnosable from the phone screen without needing DevTools.
+          onResult(`⚠️ Unexpected response (HTTP ${res.status}): ${text.slice(0, 300) || "(empty body)"}`);
+          return;
+        }
+        if (json?.ok) {
+          onResult(`✅ ${json.message}`);
+        } else {
+          onResult(json?.error ?? `Request failed (HTTP ${res.status}).`);
+        }
       } catch (err) {
-        onResult(err instanceof Error ? err.message : "Something went wrong.");
+        onResult(`Network error: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
 
