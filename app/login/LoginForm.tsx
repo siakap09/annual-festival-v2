@@ -1,12 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { login, signup, signInWithGoogle } from "@/app/actions/auth";
-import { Field, Input } from "@/components/ui/fields";
-import { Button } from "@/components/ui/Button";
+import { signInWithGoogle } from "@/app/actions/auth";
 
 export function LoginForm({ error, message }: { error?: string; message?: string }) {
-  const [mode, setMode] = useState<"login" | "signup">("login");
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -40,32 +37,6 @@ export function LoginForm({ error, message }: { error?: string; message?: string
       {error && (
         <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
       )}
-
-      <form action={mode === "login" ? login : signup} className="space-y-4">
-        <Field label="Email" required>
-          <Input type="email" name="email" placeholder="you@example.com" required />
-        </Field>
-        <Field label="Password" required>
-          <Input type="password" name="password" placeholder="••••••••" minLength={6} required />
-        </Field>
-        <Button type="submit" className="w-full justify-center">
-          {mode === "login" ? "Sign in" : "Create account"}
-        </Button>
-      </form>
-
-      <button
-        type="button"
-        onClick={() => setMode(mode === "login" ? "signup" : "login")}
-        className="mt-4 w-full text-center text-sm text-orange-600 hover:underline"
-      >
-        {mode === "login" ? "Need an account? Sign up" : "Already have an account? Sign in"}
-      </button>
-
-      <div className="my-4 flex items-center gap-3 text-xs text-gray-400">
-        <div className="h-px flex-1 bg-gray-200" />
-        or
-        <div className="h-px flex-1 bg-gray-200" />
-      </div>
 
       <button
         type="button"

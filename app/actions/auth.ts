@@ -4,33 +4,6 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { assertNotDemo, isDemo } from "@/lib/demo";
-import { getWorkspace, resolveLandingPath } from "@/lib/data/workspace";
-
-export async function login(formData: FormData) {
-  assertNotDemo();
-  const email = String(formData.get("email") ?? "");
-  const password = String(formData.get("password") ?? "");
-  const supabase = await createClient();
-
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) {
-    redirect(`/login?error=${encodeURIComponent(error.message)}`);
-  }
-  redirect(resolveLandingPath(await getWorkspace()));
-}
-
-export async function signup(formData: FormData) {
-  assertNotDemo();
-  const email = String(formData.get("email") ?? "");
-  const password = String(formData.get("password") ?? "");
-  const supabase = await createClient();
-
-  const { error } = await supabase.auth.signUp({ email, password });
-  if (error) {
-    redirect(`/login?error=${encodeURIComponent(error.message)}`);
-  }
-  redirect(`/login?message=${encodeURIComponent("Check your email to confirm your account, then sign in.")}`);
-}
 
 export async function signInWithGoogle(): Promise<{ url?: string; error?: string }> {
   assertNotDemo();
