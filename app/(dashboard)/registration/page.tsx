@@ -121,9 +121,10 @@ export default async function RegistrationPage({
                   />
                 </Field>
                 <p className="-mt-2 text-xs text-gray-400">
-                  Accepts .csv or .xlsx (e.g. an AOne export) -- only a student_name column is
-                  required. parent_name, parent_email, and parent_phone are optional -- add them
-                  from the Student List later if the file doesn&apos;t have them. Rows matching an
+                  Accepts .csv or .xlsx (e.g. an AOne export). Only these columns are read --
+                  any other columns in the file are ignored: <strong>Name</strong> (required),
+                  Guardian Name, Guardian Email, Guardian Mobile (optional -- add them from the
+                  Student List later if the file doesn&apos;t have them). Rows matching an
                   already-registered student are skipped.
                 </p>
                 <Button type="submit" variant="indigo" className="w-full justify-center">

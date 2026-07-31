@@ -34,12 +34,18 @@ async function sendParticipantQrEmail(participant: Pick<Participant, "student_na
   });
 }
 
-// Only student_name is required -- AOne (the external system this data
-// usually comes from) never exports parent/guardian info at all. Parent
-// columns are read if present, but their absence doesn't reject a row;
-// those get filled in later via completeParticipantDetails().
+// AOne's export has many columns we don't need -- pull out only these four
+// by their actual header text (case-insensitive) and ignore everything
+// else in the file. "Name" is required; the Guardian columns are optional
+// since AOne doesn't always have them -- those get filled in later via
+// completeParticipantDetails().
+const COLUMN_HEADERS = {
+  student_name: "name",
+  parent_name: "guardian name",
+  parent_email: "guardian email",
+  parent_phone: "guardian mobile",
+} as const;
 const REQUIRED_COLUMNS = ["student_name"] as const;
-const OPTIONAL_COLUMNS = ["parent_name", "parent_email", "parent_phone"] as const;
 
 export async function bulkRegisterParticipants(formData: FormData): Promise<string> {
   assertNotDemo();
@@ -57,14 +63,15 @@ export async function bulkRegisterParticipants(formData: FormData): Promise<stri
     throw new Error("The CSV file is empty.");
   }
 
-  // Match columns by header name, not position, so column order in the
-  // export doesn't matter.
+  // Match columns by header text, not position -- so column order, and any
+  // extra columns AOne includes that we don't care about, don't matter.
   const header = rows[0].map((h) => h.trim().toLowerCase());
   const colIndex: Record<string, number> = {};
-  for (const col of REQUIRED_COLUMNS) colIndex[col] = header.indexOf(col);
-  for (const col of OPTIONAL_COLUMNS) colIndex[col] = header.indexOf(col);
+  for (const [field, label] of Object.entries(COLUMN_HEADERS)) {
+    colIndex[field] = header.indexOf(label);
+  }
   if (REQUIRED_COLUMNS.some((col) => colIndex[col] === -1)) {
-    throw new Error(`CSV must have a "${REQUIRED_COLUMNS.join(", ")}" column.`);
+    throw new Error(`File must have a "${COLUMN_HEADERS.student_name}" column.`);
   }
 
   const supabase = await createClient();
