@@ -23,8 +23,6 @@ export default async function RegistrationAreaPage() {
       <BackToEditions />
       <PageHeader icon="🎫" title="Booth Area" subtitle={currentEdition.name} />
 
-      <BoothOverview participants={registered} reachedByParticipant={reachedByParticipant} />
-
       <CheckInKiosk
         participants={registered}
         reachedByParticipant={reachedByParticipant}
@@ -33,6 +31,8 @@ export default async function RegistrationAreaPage() {
         qrDataUrl={qrDataUrl}
         allowedCheckpoints={allowedCheckpoints}
       />
+
+      <BoothOverview participants={registered} reachedByParticipant={reachedByParticipant} />
     </div>
   );
 }
