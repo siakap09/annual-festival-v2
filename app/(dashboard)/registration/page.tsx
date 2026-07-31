@@ -92,7 +92,7 @@ export default async function RegistrationPage({
                       <Input name="parent_email" type="email" placeholder="parent@example.com" required />
                     </Field>
                     <p className="-mt-2 text-xs text-gray-400">
-                      QR code will be sent here once SMTP is configured.
+                      The student&apos;s check-in QR code is emailed here automatically.
                     </p>
                     <Field label="Parent Phone" required>
                       <Input name="parent_phone" placeholder="e.g. 012-3456789" required />
@@ -111,20 +111,20 @@ export default async function RegistrationPage({
               <ActionForm action={bulkRegisterParticipants} resetOnSuccess className="space-y-4">
                 <input type="hidden" name="edition_id" value={currentEdition.id} />
                 <input type="hidden" name="path" value={path} />
-                <Field label="CSV file" required>
+                <Field label="CSV or Excel file" required>
                   <input
                     type="file"
                     name="csv_file"
-                    accept=".csv,text/csv"
+                    accept=".csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     required
                     className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-orange-600 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-orange-700"
                   />
                 </Field>
                 <p className="-mt-2 text-xs text-gray-400">
-                  Only a student_name column is required (e.g. an AOne export). parent_name,
-                  parent_email, and parent_phone are optional -- add them from the Student List
-                  later if the file doesn&apos;t have them. Rows matching an already-registered
-                  student are skipped.
+                  Accepts .csv or .xlsx (e.g. an AOne export) -- only a student_name column is
+                  required. parent_name, parent_email, and parent_phone are optional -- add them
+                  from the Student List later if the file doesn&apos;t have them. Rows matching an
+                  already-registered student are skipped.
                 </p>
                 <Button type="submit" variant="indigo" className="w-full justify-center">
                   Import Students

@@ -4,6 +4,35 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { assertNotDemo } from "@/lib/demo";
 import { parseCsv } from "@/lib/csv";
+import { parseXlsx } from "@/lib/xlsx";
+import { qrSvg } from "@/lib/qr";
+import { sendEmail } from "@/lib/email";
+import type { Participant } from "@/lib/types";
+
+/**
+ * Emails the student's personal check-in QR (their qr_token, as an SVG
+ * attachment) to the parent. Throws on failure -- callers decide whether
+ * that should block the surrounding action or just be reported back.
+ */
+async function sendParticipantQrEmail(participant: Pick<Participant, "student_name" | "parent_name" | "parent_email" | "qr_token">) {
+  if (!participant.parent_email) {
+    throw new Error("No parent email on file for this student.");
+  }
+  const svg = qrSvg(participant.qr_token, 300);
+  await sendEmail({
+    to: participant.parent_email,
+    subject: `${participant.student_name}'s Festival Check-in QR Code`,
+    html: `
+      <p>Hi ${participant.parent_name ?? "there"},</p>
+      <p><strong>${participant.student_name}</strong> is registered for the festival.</p>
+      <p>Attached is their personal QR code -- please bring it (printed or on your phone) to the check-in booth on the day of the event.</p>
+    `.trim(),
+    text: `Hi ${participant.parent_name ?? "there"}, ${participant.student_name} is registered for the festival. Their personal QR code is attached -- please bring it (printed or on your phone) to the check-in booth on the day of the event.`,
+    attachments: [
+      { filename: `${participant.student_name.replace(/[^a-z0-9]+/gi, "-")}-qr.svg`, content: svg, contentType: "image/svg+xml" },
+    ],
+  });
+}
 
 // Only student_name is required -- AOne (the external system this data
 // usually comes from) never exports parent/guardian info at all. Parent
@@ -19,11 +48,11 @@ export async function bulkRegisterParticipants(formData: FormData): Promise<stri
   const file = formData.get("csv_file");
 
   if (!(file instanceof File) || file.size === 0) {
-    throw new Error("Choose a CSV file to upload.");
+    throw new Error("Choose a CSV or Excel (.xlsx) file to upload.");
   }
 
-  const text = await file.text();
-  const rows = parseCsv(text);
+  const isXlsx = file.name.toLowerCase().endsWith(".xlsx");
+  const rows = isXlsx ? parseXlsx(await file.arrayBuffer()) : parseCsv(await file.text());
   if (rows.length === 0) {
     throw new Error("The CSV file is empty.");
   }
@@ -173,7 +202,7 @@ export async function completeParticipantDetails(formData: FormData): Promise<st
   return "Details saved.";
 }
 
-export async function registerParticipant(formData: FormData) {
+export async function registerParticipant(formData: FormData): Promise<string> {
   assertNotDemo();
   const editionId = String(formData.get("edition_id"));
   const studentName = String(formData.get("student_name") ?? "").trim();
@@ -181,7 +210,9 @@ export async function registerParticipant(formData: FormData) {
   const parentEmail = String(formData.get("parent_email") ?? "").trim();
   const parentPhone = String(formData.get("parent_phone") ?? "").trim();
   const path = String(formData.get("path") ?? "/registration");
-  if (!studentName || !parentName || !parentEmail || !parentPhone) return;
+  if (!studentName || !parentName || !parentEmail || !parentPhone) {
+    throw new Error("Fill in student name, parent name, email, and phone.");
+  }
 
   const supabase = await createClient();
 
@@ -200,37 +231,86 @@ export async function registerParticipant(formData: FormData) {
   const isFull = edition ? (count ?? 0) >= edition.target_participants : false;
   const waitlisted = Boolean(isFull && edition?.enable_waitlist);
 
-  await supabase.from("participants").insert({
-    edition_id: editionId,
-    student_name: studentName,
-    parent_name: parentName,
-    parent_email: parentEmail,
-    parent_phone: parentPhone,
-    waitlisted,
-  });
+  const { data: participant, error } = await supabase
+    .from("participants")
+    .insert({
+      edition_id: editionId,
+      student_name: studentName,
+      parent_name: parentName,
+      parent_email: parentEmail,
+      parent_phone: parentPhone,
+      waitlisted,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
 
   revalidatePath(path);
+
+  if (waitlisted) {
+    return `${studentName} registered on the waitlist. QR email not sent yet.`;
+  }
+
+  try {
+    await sendParticipantQrEmail(participant as Participant);
+    await supabase.from("participants").update({ email_sent: true }).eq("id", participant.id);
+    return `${studentName} registered -- QR code emailed to ${parentEmail}.`;
+  } catch (err) {
+    return `${studentName} registered, but the QR email failed to send: ${err instanceof Error ? err.message : "unknown error"}.`;
+  }
 }
 
-export async function confirmParticipant(formData: FormData) {
+export async function confirmParticipant(formData: FormData): Promise<string> {
   assertNotDemo();
   const id = String(formData.get("id"));
   const path = String(formData.get("path") ?? "/registration");
 
   const supabase = await createClient();
-  await supabase.from("participants").update({ confirmed: true, email_sent: true }).eq("id", id);
+  const { data: participant, error } = await supabase
+    .from("participants")
+    .update({ confirmed: true })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+
   revalidatePath(path);
+
+  if (participant.email_sent) {
+    return "Confirmed.";
+  }
+  if (!participant.parent_email) {
+    return "Confirmed. No parent email on file -- add one from Student List to send the QR.";
+  }
+
+  try {
+    await sendParticipantQrEmail(participant as Participant);
+    await supabase.from("participants").update({ email_sent: true }).eq("id", id);
+    return `Confirmed -- QR code emailed to ${participant.parent_email}.`;
+  } catch (err) {
+    return `Confirmed, but the QR email failed to send: ${err instanceof Error ? err.message : "unknown error"}.`;
+  }
 }
 
-export async function markEmailSent(formData: FormData) {
+export async function resendParticipantQrEmail(formData: FormData): Promise<string> {
   assertNotDemo();
   const id = String(formData.get("id"));
   const path = String(formData.get("path") ?? "/registration");
 
   const supabase = await createClient();
+  const { data: participant, error } = await supabase
+    .from("participants")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) throw new Error(error.message);
+
+  await sendParticipantQrEmail(participant as Participant);
   await supabase.from("participants").update({ email_sent: true }).eq("id", id);
   revalidatePath(path);
+  return `QR code emailed to ${participant.parent_email}.`;
 }
+
 
 export async function checkInParticipant(formData: FormData) {
   assertNotDemo();

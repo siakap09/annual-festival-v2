@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useState } from "react";
-import { completeParticipantDetails } from "@/app/actions/registration";
+import { completeParticipantDetails, resendParticipantQrEmail } from "@/app/actions/registration";
 import { ActionForm } from "@/components/ui/ActionForm";
 import { Input } from "@/components/ui/fields";
 import { Button } from "@/components/ui/Button";
@@ -108,7 +108,7 @@ export function StudentListTable({ participants, path = "/registration" }: { par
                       </div>
                     </td>
                     <td className="py-2 text-right">
-                      {incomplete && (
+                      {incomplete ? (
                         <button
                           type="button"
                           onClick={() => setCompletingId(completingId === p.id ? null : p.id)}
@@ -116,6 +116,16 @@ export function StudentListTable({ participants, path = "/registration" }: { par
                         >
                           {completingId === p.id ? "Cancel" : "Complete details"}
                         </button>
+                      ) : (
+                        !p.email_sent && (
+                          <ActionForm action={resendParticipantQrEmail} className="inline">
+                            <input type="hidden" name="id" value={p.id} />
+                            <input type="hidden" name="path" value={path} />
+                            <Button type="submit" className="!px-2 !py-1 text-xs">
+                              Send QR
+                            </Button>
+                          </ActionForm>
+                        )
                       )}
                     </td>
                   </tr>

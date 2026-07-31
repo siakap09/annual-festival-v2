@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "smoke": "node scripts/smoke-test.mjs",
     "pages:build": "npx @cloudflare/next-on-pages",
     "preview": "npx @cloudflare/next-on-pages && npx wrangler pages dev",
     "deploy": "npx @cloudflare/next-on-pages && npx wrangler pages deploy"
@@ -16,6 +17,7 @@
     "@supabase/supabase-js": "^2.110.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
+    "fflate": "^0.8.3",
     "next": "15.5.2",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
