@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import jsQR from "jsqr";
 
 /** Live camera-based QR scanner for check-in. Requests the rear camera,
@@ -26,6 +27,7 @@ export function QrScanner({
   const cooldownRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     let cancelled = false;
@@ -113,6 +115,12 @@ export function QrScanner({
         }
         if (json?.ok) {
           onResult(`✅ ${json.message}`);
+          // revalidatePath() on the server only marks the route's cache
+          // stale -- unlike a Server Action invoked via a form/transition,
+          // a plain fetch() doesn't trigger Next's automatic RSC refresh,
+          // so the already-open page (checkpoint counts, student list)
+          // won't update without this.
+          router.refresh();
         } else {
           onResult(json?.error ?? `Request failed (HTTP ${res.status}).`);
         }
