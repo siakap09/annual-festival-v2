@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ActionForm } from "@/components/ui/ActionForm";
 import { StudentListTable } from "@/components/department/StudentListTable";
 import { formatDate, percent } from "@/lib/utils";
-import { bulkRegisterParticipants, confirmParticipant, registerParticipant } from "@/app/actions/registration";
+import { bulkRegisterParticipants, registerParticipant, resendParticipantQrEmail } from "@/app/actions/registration";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +25,6 @@ export default async function RegistrationPage({
   const path = "/registration";
 
   const participants = await getParticipants(currentEdition.id);
-  const registered = participants.filter((p) => !p.waitlisted);
   const confirmed = participants.filter((p) => p.confirmed);
   const emailPending = participants.filter((p) => !p.email_sent);
   const deadlinePassed = currentEdition.registration_deadline
@@ -40,10 +39,10 @@ export default async function RegistrationPage({
       <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Registered"
-          value={`${registered.length} / ${currentEdition.target_participants}`}
-          caption={`${percent(registered.length, currentEdition.target_participants)}% of target`}
+          value={`${confirmed.length} / ${currentEdition.target_participants}`}
+          caption={`${percent(confirmed.length, currentEdition.target_participants)}% of target (confirmed only)`}
           icon="🎓"
-          progress={percent(registered.length, currentEdition.target_participants)}
+          progress={percent(confirmed.length, currentEdition.target_participants)}
         />
         <StatCard label="Confirmed" value={confirmed.length} caption={`${participants.length - confirmed.length} pending confirmation`} icon="✅" />
         <StatCard label="Email Sent" value={participants.length - emailPending.length} caption={`${emailPending.length} not yet sent`} icon="✉️" />
@@ -146,12 +145,12 @@ export default async function RegistrationPage({
 
           {tab === "confirm" && (
             <div>
-              {participants.filter((p) => !p.confirmed).length === 0 ? (
-                <EmptyState message="No students awaiting confirmation" />
+              {participants.filter((p) => !p.email_sent).length === 0 ? (
+                <EmptyState message="Every student has been emailed their QR code" />
               ) : (
                 <ul className="divide-y divide-gray-100">
                   {participants
-                    .filter((p) => !p.confirmed)
+                    .filter((p) => !p.email_sent)
                     .map((p) => (
                       <li key={p.id} className="flex items-center justify-between py-2 text-sm">
                         <div>
@@ -160,13 +159,17 @@ export default async function RegistrationPage({
                             {p.parent_name && p.parent_email ? `${p.parent_name} · ${p.parent_email}` : "Parent details not yet added"}
                           </div>
                         </div>
-                        <ActionForm action={confirmParticipant}>
-                          <input type="hidden" name="id" value={p.id} />
-                          <input type="hidden" name="path" value={path} />
-                          <Button type="submit" variant="green" className="!px-3 !py-1.5 text-xs">
-                            Confirm
-                          </Button>
-                        </ActionForm>
+                        {p.parent_email ? (
+                          <ActionForm action={resendParticipantQrEmail}>
+                            <input type="hidden" name="id" value={p.id} />
+                            <input type="hidden" name="path" value={path} />
+                            <Button type="submit" variant="green" className="!px-3 !py-1.5 text-xs">
+                              Send QR
+                            </Button>
+                          </ActionForm>
+                        ) : (
+                          <span className="text-xs text-gray-400">Add parent email from Student List first</span>
+                        )}
                       </li>
                     ))}
                 </ul>

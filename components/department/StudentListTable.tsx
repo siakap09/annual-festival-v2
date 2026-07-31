@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useState } from "react";
-import { completeParticipantDetails, resendParticipantQrEmail } from "@/app/actions/registration";
+import { completeParticipantDetails, confirmParticipant } from "@/app/actions/registration";
 import { ActionForm } from "@/components/ui/ActionForm";
 import { Input } from "@/components/ui/fields";
 import { Button } from "@/components/ui/Button";
@@ -117,12 +117,12 @@ export function StudentListTable({ participants, path = "/registration" }: { par
                           {completingId === p.id ? "Cancel" : "Complete details"}
                         </button>
                       ) : (
-                        !p.email_sent && (
-                          <ActionForm action={resendParticipantQrEmail} className="inline">
+                        !p.confirmed && (
+                          <ActionForm action={confirmParticipant} className="inline">
                             <input type="hidden" name="id" value={p.id} />
                             <input type="hidden" name="path" value={path} />
-                            <Button type="submit" className="!px-2 !py-1 text-xs">
-                              Send QR
+                            <Button type="submit" variant="green" className="!px-2 !py-1 text-xs">
+                              Confirm
                             </Button>
                           </ActionForm>
                         )

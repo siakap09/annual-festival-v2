@@ -267,36 +267,26 @@ export async function registerParticipant(formData: FormData): Promise<string> {
   }
 }
 
+// Deliberately does not touch email_sent -- confirming a student and
+// emailing them their QR are separate actions (Student List's "Confirm"
+// button vs. the Confirm Students tab's "Send QR" button).
 export async function confirmParticipant(formData: FormData): Promise<string> {
   assertNotDemo();
   const id = String(formData.get("id"));
   const path = String(formData.get("path") ?? "/registration");
 
   const supabase = await createClient();
-  const { data: participant, error } = await supabase
+  const { data, error } = await supabase
     .from("participants")
     .update({ confirmed: true })
     .eq("id", id)
     .select()
-    .single();
+    .maybeSingle();
   if (error) throw new Error(error.message);
+  if (!data) throw new Error("You don't have permission to confirm this student.");
 
   revalidatePath(path);
-
-  if (participant.email_sent) {
-    return "Confirmed.";
-  }
-  if (!participant.parent_email) {
-    return "Confirmed. No parent email on file -- add one from Student List to send the QR.";
-  }
-
-  try {
-    await sendParticipantQrEmail(participant as Participant);
-    await supabase.from("participants").update({ email_sent: true }).eq("id", id);
-    return `Confirmed -- QR code emailed to ${participant.parent_email}.`;
-  } catch (err) {
-    return `Confirmed, but the QR email failed to send: ${err instanceof Error ? err.message : "unknown error"}.`;
-  }
+  return "Confirmed.";
 }
 
 export async function resendParticipantQrEmail(formData: FormData): Promise<string> {
