@@ -48,13 +48,14 @@ export async function createEdition(formData: FormData) {
     throw new Error(error?.message ?? "Failed to create edition");
   }
 
-  await supabase.from("departments").insert(
+  const { error: deptError } = await supabase.from("departments").insert(
     DEPARTMENTS.map((d) => ({
       edition_id: edition.id,
       key: d.key,
       name: d.name,
     }))
   );
+  if (deptError) throw new Error(`Edition created, but failed to set up departments: ${deptError.message}`);
 
   revalidatePath("/editions");
 }
@@ -131,7 +132,7 @@ export async function copyEdition(formData: FormData) {
 
   if (error || !newEdition) return;
 
-  await supabase.from("departments").insert(
+  const { error: deptError } = await supabase.from("departments").insert(
     (sourceDepartments ?? []).map((d) => ({
       edition_id: newEdition.id,
       key: d.key,
@@ -139,6 +140,7 @@ export async function copyEdition(formData: FormData) {
       lead_name: d.lead_name,
     }))
   );
+  if (deptError) throw new Error(`Edition copied, but failed to set up departments: ${deptError.message}`);
 
   revalidatePath("/editions");
 }
