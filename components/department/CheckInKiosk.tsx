@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { checkInParticipant } from "@/app/actions/registration";
 import { Input } from "@/components/ui/fields";
 import { ShareCheckinLink } from "@/components/department/ShareCheckinLink";
+import { QrScanner } from "@/components/department/QrScanner";
 import { cn } from "@/lib/utils";
 import type { Participant } from "@/lib/types";
 
@@ -189,10 +190,7 @@ export function CheckInKiosk({
             </div>
           </div>
         ) : (
-          <div className="flex aspect-video flex-col items-center justify-center gap-1 rounded-md bg-black/40 text-center text-xs text-indigo-100">
-            <span className="text-2xl">📷</span>
-            Point at parent&apos;s QR code
-          </div>
+          <QrScanner checkpoint={checkpoint} path={path} onResult={setFeedback} disabled={pending} />
         )}
 
         {feedback && <p className="mt-3 rounded bg-indigo-500/60 p-2 text-xs">{feedback}</p>}

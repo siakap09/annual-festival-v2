@@ -313,14 +313,12 @@ export async function resendParticipantQrEmail(formData: FormData): Promise<stri
 }
 
 
-export async function checkInParticipant(formData: FormData) {
-  assertNotDemo();
-  const participantId = String(formData.get("participant_id"));
-  const checkpoint = Number(formData.get("checkpoint"));
-  const path = String(formData.get("path") ?? "/registration-area");
-
-  const supabase = await createClient();
-
+async function checkInParticipantId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  participantId: string,
+  checkpoint: number,
+  path: string
+) {
   const { data: existing } = await supabase
     .from("checkin_events")
     .select("checkpoint")
@@ -351,4 +349,38 @@ export async function checkInParticipant(formData: FormData) {
   if (!data) throw new Error("You don't have permission to check students in at this booth.");
 
   revalidatePath(path);
+}
+
+export async function checkInParticipant(formData: FormData) {
+  assertNotDemo();
+  const participantId = String(formData.get("participant_id"));
+  const checkpoint = Number(formData.get("checkpoint"));
+  const path = String(formData.get("path") ?? "/registration-area");
+
+  const supabase = await createClient();
+  await checkInParticipantId(supabase, participantId, checkpoint, path);
+}
+
+/** Used by the camera-based "Scan QR" flow -- the QR encodes the student's
+ * qr_token directly, so this resolves it to a participant before running
+ * the same order-rule check-in logic as the search-based flow. */
+export async function checkInByQrToken(formData: FormData): Promise<string> {
+  assertNotDemo();
+  const token = String(formData.get("qr_token"));
+  const checkpoint = Number(formData.get("checkpoint"));
+  const path = String(formData.get("path") ?? "/registration-area");
+
+  const supabase = await createClient();
+  const { data: participant } = await supabase
+    .from("participants")
+    .select("id, student_name")
+    .eq("qr_token", token)
+    .maybeSingle();
+
+  if (!participant) {
+    throw new Error("QR code not recognized.");
+  }
+
+  await checkInParticipantId(supabase, participant.id, checkpoint, path);
+  return `${participant.student_name} checked in at Booth ${checkpoint}.`;
 }
