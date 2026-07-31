@@ -107,29 +107,6 @@ export const getWorkspace = cache(async (): Promise<Workspace> => {
 
   if (!user) redirect("/login");
 
-  // Check section_access FIRST, before organization_members. A scoped grant
-  // is a deliberate, specific restriction an admin set up for this person --
-  // it must win even if this account separately has its own (likely unused)
-  // organization_members row, e.g. from the solo org handle_new_user() auto-
-  // creates for every brand-new signup. Without this ordering, anyone who'd
-  // ever logged in before being granted section_access keeps seeing their
-  // own full workspace (Edition Management included) instead of being
-  // restricted to what they were actually granted.
-  await supabase
-    .from("section_access")
-    .update({ user_id: user.id })
-    .is("user_id", null)
-    .eq("email", (user.email ?? "").toLowerCase());
-
-  const { data: scoped } = await supabase
-    .from("section_access")
-    .select("edition_id, department_id, access_level, checkpoint")
-    .eq("user_id", user.id);
-
-  if (scoped && scoped.length > 0) {
-    return buildScopedWorkspace(supabase, user, scoped as ScopedAccessRow[]);
-  }
-
   let { data: membership } = await supabase
     .from("organization_members")
     .select("organization_id, role")
@@ -155,6 +132,31 @@ export const getWorkspace = cache(async (): Promise<Workspace> => {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle());
+  }
+
+  // Owners are never restricted by a section_access grant, even one on
+  // their own account (e.g. a grant added for testing) -- an org's owner
+  // always gets full access. Everyone else (no membership at all, or an
+  // "admin" role) is checked against section_access first: a scoped grant
+  // is a deliberate, specific restriction and must win even if this
+  // account separately has its own (likely unused) organization_members
+  // row, e.g. from the solo org handle_new_user() auto-creates for every
+  // brand-new signup.
+  if (!membership || membership.role !== "owner") {
+    await supabase
+      .from("section_access")
+      .update({ user_id: user.id })
+      .is("user_id", null)
+      .eq("email", (user.email ?? "").toLowerCase());
+
+    const { data: scoped } = await supabase
+      .from("section_access")
+      .select("edition_id, department_id, access_level, checkpoint")
+      .eq("user_id", user.id);
+
+    if (scoped && scoped.length > 0) {
+      return buildScopedWorkspace(supabase, user, scoped as ScopedAccessRow[]);
+    }
   }
 
   if (!membership) {
