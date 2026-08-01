@@ -14,7 +14,8 @@ export function ActionForm({
   /** Reset the form's fields back to their defaults after a successful submit. */
   resetOnSuccess?: boolean;
   className?: string;
-  children: React.ReactNode;
+  /** Pass a function instead of plain nodes to render a pending/loading state (e.g. a spinner on the submit button) while the action is in flight. */
+  children: React.ReactNode | ((pending: boolean) => React.ReactNode);
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +43,7 @@ export function ActionForm({
       }}
     >
       <fieldset disabled={pending} className="contents">
-        {children}
+        {typeof children === "function" ? children(pending) : children}
       </fieldset>
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
       {success && <p className="mt-1 text-xs text-green-600">{success}</p>}
