@@ -90,16 +90,13 @@ export default async function RegistrationPage({
                     <Field label="Parent Email" required>
                       <Input name="parent_email" type="email" placeholder="parent@example.com" required />
                     </Field>
-                    <p className="-mt-2 text-xs text-gray-400">
-                      The student&apos;s check-in QR code is emailed here automatically.
-                    </p>
                     <Field label="Parent Phone" required>
                       <Input name="parent_phone" placeholder="e.g. 012-3456789" required />
                     </Field>
                   </div>
                 </div>
                 <Button type="submit" variant="indigo" className="w-full justify-center">
-                  Register &amp; Send QR to Parent
+                  Register Student
                 </Button>
               </ActionForm>
             </div>

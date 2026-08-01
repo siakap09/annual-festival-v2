@@ -242,33 +242,21 @@ export async function registerParticipant(formData: FormData): Promise<string> {
   const isFull = edition ? (count ?? 0) >= edition.target_participants : false;
   const waitlisted = Boolean(isFull && edition?.enable_waitlist);
 
-  const { data: participant, error } = await supabase
-    .from("participants")
-    .insert({
-      edition_id: editionId,
-      student_name: studentName,
-      parent_name: parentName,
-      parent_email: parentEmail,
-      parent_phone: parentPhone,
-      waitlisted,
-    })
-    .select()
-    .single();
+  const { error } = await supabase.from("participants").insert({
+    edition_id: editionId,
+    student_name: studentName,
+    parent_name: parentName,
+    parent_email: parentEmail,
+    parent_phone: parentPhone,
+    waitlisted,
+  });
   if (error) throw new Error(error.message);
 
   revalidatePath(path);
 
-  if (waitlisted) {
-    return `${studentName} registered on the waitlist. QR email not sent yet.`;
-  }
-
-  try {
-    await sendParticipantQrEmail(participant as Participant);
-    await supabase.from("participants").update({ email_sent: true }).eq("id", participant.id);
-    return `${studentName} registered -- QR code emailed to ${parentEmail}.`;
-  } catch (err) {
-    return `${studentName} registered, but the QR email failed to send: ${err instanceof Error ? err.message : "unknown error"}.`;
-  }
+  return waitlisted
+    ? `${studentName} registered on the waitlist.`
+    : `${studentName} registered. Send their QR code from the Confirm Students tab when ready.`;
 }
 
 // Deliberately does not touch email_sent -- confirming a student and
