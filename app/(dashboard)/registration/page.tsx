@@ -116,13 +116,13 @@ export default async function RegistrationPage({
                     className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-orange-600 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-orange-700"
                   />
                 </Field>
-                <p className="-mt-2 text-xs text-gray-400">
+                <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2.5 text-xs leading-relaxed text-gray-500">
                   Accepts .csv or .xlsx (e.g. an AOne export). Only these columns are read --
-                  any other columns in the file are ignored: <strong>Name</strong> (required),
+                  any other columns in the file are ignored: <strong className="text-gray-600">Name</strong> (required),
                   Guardian Name, Guardian Email, Guardian Mobile (optional -- add them from the
                   Student List later if the file doesn&apos;t have them). Rows matching an
                   already-registered student are skipped.
-                </p>
+                </div>
                 <Button type="submit" variant="indigo" className="w-full justify-center">
                   Import Students
                 </Button>
